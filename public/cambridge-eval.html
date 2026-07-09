@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Đánh Giá Học Sinh</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --navy: #1a2b4c;
+            --cherry: #D2042D;
+            --gold: #D4AF37;
+        }
+        
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Chỉnh phong cách Tabs cho Layout Ngang */
+        .tab-active { color: var(--navy); border-bottom: 3px solid var(--gold); font-weight: 800; background-color: transparent; }
+        .tab-inactive { color: #64748b; border-bottom: 3px solid transparent; font-weight: 600; }
+        .tab-inactive:hover { color: var(--navy); border-bottom: 3px solid #cbd5e1; }
+        
+        .role-active { background-color: var(--navy); color: white; border-color: var(--gold); border-width: 2px; font-weight: 700; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .role-inactive { background-color: white; color: #475569; border-color: #cbd5e1; border-width: 1px; font-weight: 600; }
+        .role-inactive:hover { background-color: #f8fafc; border-color: var(--navy); color: var(--navy); }
+        
+        /* Input styling chung */
+        .form-input {
+            width: 100%; border-radius: 0.5rem; border: 1px solid #cbd5e1; padding: 0.625rem 0.875rem; font-size: 0.875rem;
+            background-color: #ffffff; transition: all 0.2s; color: #1e293b; font-weight: 500; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .form-input:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26, 43, 76, 0.15); }
+        .form-input::placeholder { color: #94a3b8; font-weight: 400; }
+        
+        /* Tiêu đề mục chuyên nghiệp */
+        .section-header {
+            background-color: var(--navy); color: white; border-left: 6px solid var(--gold);
+            padding: 0.625rem 1.25rem; border-radius: 0 0.5rem 0.5rem 0; font-weight: 800; text-transform: uppercase; 
+            letter-spacing: 0.05em; font-size: 0.875rem; margin-bottom: 1.25rem; display: inline-flex; align-items: center; gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Page transition */
+        .page-content { display: none; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .page-content.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Vô hiệu hoá mũi tên input number */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        /* CSS Cơ bản cho in ấn - Xoá UI thừa */
+        @media print {
+            .no-print { display: none !important; }
+            body, main { background: white !important; overflow: visible !important; height: auto !important; }
+            .page-content { display: block !important; padding: 0 !important; }
+            .page-content:not(.active) { display: none !important; }
+            .max-w-5xl { max-width: 100% !important; margin: 0 !important; box-shadow: none !important; border: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            textarea { resize: none; overflow: hidden; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-gray-800 antialiased bg-[#f1f5f9]">
+
+    <!-- HEADER -->
+    <header class="bg-[#1a2b4c] border-b-[4px] border-[#D4AF37] shadow-md shrink-0 no-print z-50">
+        <div class="max-w-[1600px] mx-auto px-6">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/10 p-3 rounded-xl border border-white/20 shadow-inner flex shrink-0 backdrop-blur-sm">
+                        <i data-lucide="graduation-cap" class="w-6 h-6 text-[#D4AF37]"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h1 class="font-black text-white text-2xl tracking-wide uppercase">Quản Lý Đánh Giá</h1>
+                            <span class="bg-[#D2042D] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">BETA 01</span>
+                        </div>
+                        <p class="text-xs font-semibold text-[#D4AF37] mt-1 uppercase tracking-widest">Năm học 2026-2027</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="window.print()" class="px-5 py-2.5 bg-white/10 border border-white/20 rounded-lg text-sm font-bold text-white hover:bg-white hover:text-[#1a2b4c] flex items-center gap-2 transition-all">
+                        <i data-lucide="printer" class="w-4 h-4"></i> IN PHIẾU
+                    </button>
+                    <button class="px-5 py-2.5 bg-[#D2042D] border-2 border-[#D2042D] rounded-lg shadow-lg text-sm font-bold text-white hover:bg-[#a10322] flex items-center gap-2 transition-all">
+                        <i data-lucide="save" class="w-4 h-4"></i> LƯU DỮ LIỆU
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ROLE & TAB NAVIGATION -->
+    <div class="bg-white shadow-sm shrink-0 z-40 no-print border-b border-gray-200 relative">
+        <div class="max-w-[1600px] mx-auto px-6">
+            <!-- 3 Main Roles -->
+            <div class="flex flex-wrap gap-4 py-2 border-b border-gray-100">
+                <button onclick="switchRole('role-gv')" id="btn-role-gv" class="role-btn role-active px-4 py-1.5 rounded-lg text-sm uppercase tracking-wide flex items-center gap-2 transition-all">
+                    <i data-lucide="users" class="w-5 h-5"></i> Giáo viên
+                </button>
+                <button onclick="switchRole('role-cv')" id="btn-role-cv" class="role-btn role-inactive px-4 py-1.5 rounded-lg text-sm uppercase tracking-wide flex items-center gap-2 transition-all">
+                    <i data-lucide="briefcase" class="w-5 h-5"></i> Chuyên viên
+                </button>
+                <button onclick="switchRole('role-ph')" id="btn-role-ph" class="role-btn role-inactive px-4 py-1.5 rounded-lg text-sm uppercase tracking-wide flex items-center gap-2 transition-all">
+                    <i data-lucide="home" class="w-5 h-5"></i> Phụ huynh (Báo cáo)
+                </button>
+            </div>
+            
+            <!-- Sub Tabs -->
+            <nav class="flex overflow-x-auto pt-2 hide-scrollbar gap-8" aria-label="Tabs">
+                <!-- Tabs Giáo Viên -->
+                <div id="subnav-role-gv" class="subnav-group flex flex-row gap-8" style="display: flex;">
+                    <button onclick="switchTab('page-gv01')" id="tab-gv01" class="tab-btn tab-active pb-3 text-sm uppercase tracking-wide flex items-center gap-2 whitespace-nowrap transition-colors">
+                        <i data-lucide="calendar-days" class="w-4 h-4"></i> GV01. Theo dõi cá nhân
+                    </button>
+                    <button onclick="switchTab('page-gv02')" id="tab-gv02" class="tab-btn tab-inactive pb-3 text-sm uppercase tracking-wide flex items-center gap-2 whitespace-nowrap transition-colors">
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i> GV02. Rà soát (GV)
+                    </button>
+                </div>
+
+                <!-- Tabs Chuyên Viên -->
+                <div id="subnav-role-cv" class="subnav-group flex flex-row gap-8" style="display: none;">
+                    <button onclick="switchTab('page-cv01')" id="tab-cv01" class="tab-btn tab-inactive pb-3 text-sm uppercase tracking-wide flex items-center gap-2 whitespace-nowrap transition-colors">
+                        <i data-lucide="stethoscope" class="w-4 h-4"></i> CV01. Rà soát (CV)
+                    </button>
+                    <button onclick="switchTab('page-cv02')" id="tab-cv02" class="tab-btn tab-inactive pb-3 text-sm uppercase tracking-wide flex items-center gap-2 whitespace-nowrap transition-colors">
+                        <i data-lucide="line-chart" class="w-4 h-4"></i> CV02. Tiến độ & Dự báo
+                    </button>
+                </div>
+
+                <!-- Tabs Phụ Huynh -->
+                <div id="subnav-role-ph" class="subnav-group flex flex-row gap-8" style="display: none;">
+                    <button onclick="switchTab('page-ph01-tuan')" id="tab-ph01-tuan" class="tab-btn tab-inactive pb-3 text-sm uppercase tracking-wide flex items-center gap-2 whitespace-nowrap transition-colors">
+                        <i data-lucide="mail" class="w-4 h-4"></i> PH01. Báo cáo Tuần
+                    </button>
+                    <button onclick="switchTab('page-ph01-lesson')" id="tab-ph01-lesson" class="tab-btn tab-inactive pb-3 text-sm uppercase tracking-wide flex items-center gap-2 whitespace-nowrap transition-colors">
+                        <i data-lucide="file-check-2" class="w-4 h-4"></i> PH01. Báo cáo Lesson
+                    </button>
+                    <button onclick="switchTab('page-ph01-midterm')" id="tab-ph01-midterm" class="tab-btn tab-inactive pb-3 text-sm uppercase tracking-wide flex items-center gap-2 whitespace-nowrap transition-colors">
+                        <i data-lucide="award" class="w-4 h-4"></i> PH01. Báo cáo Mid-term
+                    </button>
+                    <button onclick="switchTab('page-ph01-final')" id="tab-ph01-final" class="tab-btn tab-inactive pb-3 text-sm uppercase tracking-wide flex items-center gap-2 whitespace-nowrap transition-colors">
+                        <i data-lucide="medal" class="w-4 h-4"></i> PH01. Báo cáo Final
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto p-6 md:p-8">
+        <div class="max-w-[1600px] mx-auto">
+
+            <!-- ================= PAGE 1: GV01 ================= -->
+            <div id="page-gv01" class="page-content active space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center mb-8 border-b border-gray-100 pb-5">
+                        <div>
+                            <h2 class="text-2xl font-black text-[#1a2b4c] tracking-tight">NĂM HỌC 2026-2027</h2>
+                            <div class="flex items-center gap-3 mt-3">
+                                <h3 class="text-base font-black text-[#D2042D] uppercase tracking-wide">PHIẾU THEO DÕI THÁNG</h3>
+                                <input type="month" id="gv01-month-picker" class="form-input w-48 text-sm font-bold text-[#1a2b4c] py-2 border-[#1a2b4c]/30 shadow-inner" value="2026-08" onchange="generateGV01Calendar()">
+                            </div>
+                        </div>
+                        <p class="text-sm text-[#1a2b4c] font-medium mt-4 md:mt-0 bg-[#f8fafc] px-5 py-3 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2">
+                            <i data-lucide="info" class="w-4 h-4 text-[#D4AF37]"></i> GHI CHÚ: Mẫu theo dõi này dành cho giáo viên.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div><label class="block text-xs font-black text-[#1a2b4c] mb-2 uppercase tracking-wider">Họ và tên học sinh</label><input type="text" class="form-input bg-gray-50 font-bold" placeholder="Nhập họ tên..."></div>
+                        <div><label class="block text-xs font-black text-[#1a2b4c] mb-2 uppercase tracking-wider">Lớp</label><input type="text" class="form-input bg-gray-50 font-bold" placeholder="..."></div>
+                        <div><label class="block text-xs font-black text-[#1a2b4c] mb-2 uppercase tracking-wider">Lớp tiếng Anh</label><input type="text" class="form-input bg-gray-50 font-bold" placeholder="..."></div>
+                        <div><label class="block text-xs font-black text-[#1a2b4c] mb-2 uppercase tracking-wider">Giáo viên tiếng Anh</label><input type="text" class="form-input bg-gray-50 font-bold" placeholder="..."></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-6 bg-[#f8fafc] border-b border-gray-200 flex flex-wrap justify-between items-center gap-4">
+                        <h3 class="font-black text-[#1a2b4c] text-lg uppercase tracking-wide">BẢNG THEO DÕI CHI TIẾT</h3>
+                        <div class="flex flex-wrap gap-5 text-sm font-bold text-gray-700">
+                            <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-emerald-500 text-white flex items-center justify-center font-black shadow-sm">3</span> Xuất sắc</span>
+                            <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-[#D4AF37] text-white flex items-center justify-center font-black shadow-sm">2</span> Đạt yêu cầu</span>
+                            <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-[#D2042D] text-white flex items-center justify-center font-black shadow-sm">1</span> Cần hỗ trợ</span>
+                            <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-gray-300 text-white flex items-center justify-center font-black shadow-sm">0</span> Không đánh giá</span>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto p-4">
+                        <table class="w-full text-sm text-left whitespace-nowrap border-collapse border border-gray-300 rounded-lg overflow-hidden">
+                            <thead class="bg-[#1a2b4c] text-white text-center font-bold text-xs tracking-wider">
+                                <tr>
+                                    <th class="px-3 py-4 border border-[#2a3f6c] w-16 uppercase">Tuần</th>
+                                    <th class="px-3 py-4 border border-[#2a3f6c] w-16 uppercase">Ngày</th>
+                                    <th class="px-3 py-4 border border-[#2a3f6c] w-20 uppercase">Thứ</th>
+                                    <th class="px-2 py-4 border border-[#2a3f6c] w-28 whitespace-normal leading-tight">Hiểu, nắm bắt kiến thức</th>
+                                    <th class="px-2 py-4 border border-[#2a3f6c] w-28 whitespace-normal leading-tight">Hoàn thành yêu cầu</th>
+                                    <th class="px-2 py-4 border border-[#2a3f6c] w-28 whitespace-normal leading-tight">Thái độ học tập</th>
+                                    <th class="px-2 py-4 border border-[#2a3f6c] w-28 whitespace-normal leading-tight">Tự tin SD Tiếng Anh</th>
+                                    <th class="px-2 py-4 border border-[#2a3f6c] w-24 whitespace-normal leading-tight">Làm BTVN</th>
+                                    <th class="px-2 py-4 border border-[#2a3f6c] w-24 whitespace-normal leading-tight">Chuyên cần</th>
+                                    <th class="px-2 py-4 border border-[#2a3f6c] w-24 whitespace-normal leading-tight">Tác phong</th>
+                                    <th class="px-4 py-4 border border-[#2a3f6c] min-w-[200px] text-left uppercase">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gv01-tbody" class="divide-y divide-gray-200 text-center text-gray-800 font-medium">
+                            </tbody>
+                        </table>
+                        <div class="mt-8 p-6 bg-[#f8fafc] border border-gray-200 rounded-xl text-sm text-gray-800 space-y-6">
+                            <div>
+                                <h4 class="font-black text-[#1a2b4c] mb-3 uppercase tracking-wide">1. Chú thích:</h4>
+                                <ul class="space-y-1.5 list-disc pl-5 text-[13px] font-medium leading-relaxed">
+                                    <li>(1): khả năng hiểu, nắm bắt và ghi nhớ nội dung kiến thức học</li>
+                                    <li>(2): hoàn thành những yêu cầu của thầy cô về trả bài cũ, bài tập, bài thực hành cá nhân/nhóm…</li>
+                                    <li>(3): thái độ (tập trung, lắng nghe, hợp tác với thầy cô/ bạn)</li>
+                                    <li>(4): tự tin sử dụng tiếng Anh với thầy cô, bạn trong lớp cũng như ngoài lớp</li>
+                                    <li>(5): hoàn thành tất cả các bài tập về nhà (nếu có)</li>
+                                    <li>(6): tỷ lệ đi học đủ, hoàn thành tốt tất cả các yêu cầu của thầy cô</li>
+                                    <li>(7): tác phong nói chung (trang phục, tương tác với thầy cô và bạn bè…)</li>
+                                    <li>(8): liệt kê chi tiết Đạt/Chưa đạt ở điểm nào, hướng xử lý…</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ================= PAGE 2: GV02 ================= -->
+            <div id="page-gv02" class="page-content space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-5xl mx-auto">
+                    <div class="text-center mb-10">
+                        <h2 class="text-2xl font-black text-[#1a2b4c] uppercase tracking-wide mb-2">PHIẾU RÀ SOÁT VÀ KẾ HOẠCH CAN THIỆP HỌC SINH</h2>
+                        <p class="text-base font-bold text-gray-500 mb-6">(Student Intervention & Diagnostic Form)</p>
+                        <div class="bg-[#fff0f2] border-l-4 border-[#D2042D] p-4 rounded-r-xl inline-block shadow-sm text-left max-w-4xl">
+                            <p class="text-sm text-[#D2042D] font-bold leading-relaxed flex items-start gap-2">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 mt-0.5"></i>
+                                <span>GHI CHÚ: Phiếu áp dụng cho HS cần được hướng dẫn, điều chỉnh hoặc can thiệp về khả năng tiếp thu, ghi nhớ, hoàn thành bài … trong học tập.<br>
+                                <span class="font-black underline">(Khi xuất hiện 3 Ô ĐỎ liên tiếp HÀNG DỌC của tiêu chí 1, 2, 5 trong Phiếu theo dõi cá nhân Ngày–Tuần–Tháng của gv – Phiếu GV01).</span></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="user" class="w-4 h-4"></i> 1. THÔNG TIN HỌC SINH</div>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 mb-10 px-4">
+                        <div class="md:col-span-3 space-y-5">
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Họ và tên học sinh:</span><input type="text" class="form-input bg-gray-50 flex-1 font-bold"></div>
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Lớp tiếng Anh:</span><input type="text" class="form-input bg-gray-50 flex-1 font-bold"></div>
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Cấp độ CEFR:</span><input type="text" class="form-input bg-gray-50 flex-1 font-bold"></div>
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Giáo viên phụ trách:</span><input type="text" class="form-input bg-gray-50 flex-1 font-bold"></div>
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Ngày lập phiếu:</span><input type="date" class="form-input bg-gray-50 flex-1 font-bold text-[#1a2b4c]"></div>
+                        </div>
+                        <div class="md:col-span-2 bg-[#f8fafc] p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <span class="text-sm font-black text-[#1a2b4c] block mb-4 uppercase tracking-wide border-b border-gray-200 pb-2">Lý do can thiệp:</span>
+                            <div class="space-y-4 text-sm text-gray-800 font-bold">
+                                <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-[#1a2b4c] focus:ring-[#1a2b4c]"> <span class="group-hover:text-[#D4AF37] transition-colors">Không tiến bộ trong 1 tuần</span></label>
+                                <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-[#1a2b4c] focus:ring-[#1a2b4c]"> <span class="group-hover:text-[#D4AF37] transition-colors">Không tiến bộ trong 2 tuần</span></label>
+                                <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-[#1a2b4c] focus:ring-[#1a2b4c]"> <span class="group-hover:text-[#D4AF37] transition-colors">Không tiến bộ trong 3 tuần</span></label>
+                                <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-[#1a2b4c] focus:ring-[#1a2b4c]"> <span class="shrink-0 group-hover:text-[#D4AF37] transition-colors">Lý do khác</span> <input type="text" class="border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none px-2 flex-1 bg-transparent font-medium"></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="target" class="w-4 h-4"></i> 2. TIÊU CHÍ CẦN CAN THIỆP</div>
+                    <div class="mb-10 overflow-x-auto px-4">
+                        <table class="w-full text-base border-collapse border border-gray-300 text-left rounded-lg overflow-hidden shadow-sm">
+                            <thead class="bg-[#f0f4f8] text-[#1a2b4c]">
+                                <tr>
+                                    <th class="p-4 border border-gray-300 w-1/4 font-black uppercase text-sm tracking-wide">Tiêu chí</th>
+                                    <th class="p-4 border border-gray-300 text-center w-24 font-black uppercase text-sm tracking-wide">Tick</th>
+                                    <th class="p-4 border border-gray-300 font-black uppercase text-sm tracking-wide">Ghi chú (GV ghi chú: vd: em thiếu tập trung...)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-800 font-medium">
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 font-bold">(1) Hiểu bài</td><td class="p-4 border border-gray-300 text-center"><input type="checkbox" class="w-6 h-6 rounded text-[#1a2b4c] focus:ring-[#1a2b4c]"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 font-bold">(2) Hoàn thành bài</td><td class="p-4 border border-gray-300 text-center"><input type="checkbox" class="w-6 h-6 rounded text-[#1a2b4c] focus:ring-[#1a2b4c]"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 font-bold">(5) Bài tập về nhà</td><td class="p-4 border border-gray-300 text-center"><input type="checkbox" class="w-6 h-6 rounded text-[#1a2b4c] focus:ring-[#1a2b4c]"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="clipboard-check" class="w-4 h-4"></i> 3. KẾ HOẠCH CAN THIỆP (LSP)</div>
+                    <div class="mb-10 px-4">
+                        <div class="flex flex-wrap items-center gap-x-8 gap-y-5 mb-8 text-sm text-gray-800 bg-[#f8fafc] p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <div class="flex items-center gap-2"><span class="font-black text-[#1a2b4c] uppercase tracking-wide">Dự kiến:</span><input type="text" class="w-16 border-b-2 border-gray-400 focus:border-[#1a2b4c] bg-transparent text-center outline-none font-bold text-[#D2042D] text-lg"> <span class="font-bold">ngày/tuần</span></div>
+                            <div class="flex items-center gap-2"><span class="font-black text-[#1a2b4c] uppercase tracking-wide">Thời gian: từ</span><input type="date" class="form-input py-1.5 w-auto font-bold text-[#1a2b4c]"><span class="font-black text-[#1a2b4c] uppercase tracking-wide mx-2">đến</span><input type="date" class="form-input py-1.5 w-auto font-bold text-[#1a2b4c]"></div>
+                            <div class="flex items-center gap-3 w-full mt-2"><span class="font-black text-[#1a2b4c] uppercase tracking-wide">Mục tiêu:</span><input type="text" class="form-input bg-white flex-1 font-medium"></div>
+                        </div>
+                        <p class="font-black text-[#1a2b4c] mb-4 uppercase tracking-wide text-sm">Các biện pháp hỗ trợ cụ thể:</p>
+                        <div class="space-y-4 text-base text-gray-800 font-medium">
+                            <label class="flex items-start gap-4 cursor-pointer group p-3 bg-gray-50 border border-gray-100 hover:border-[#D4AF37] hover:bg-[#fffcf0] rounded-xl transition-all shadow-sm"><input type="checkbox" class="w-6 h-6 mt-0.5 rounded text-[#1a2b4c] focus:ring-[#1a2b4c] shrink-0"> <span class="leading-relaxed">Hỗ trợ tại lớp: ngồi bàn đầu/ tại bàn GV, thầy cô kiểm tra thường xuyên hơn, chỉ định trả lời những câu hỏi vừa sức, thầy cô hướng dẫn riêng khi cả lớp làm bài tập, hoặc sau tiết học.</span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-3 bg-gray-50 border border-gray-100 hover:border-[#D4AF37] hover:bg-[#fffcf0] rounded-xl transition-all shadow-sm"><input type="checkbox" class="w-6 h-6 mt-0.5 rounded text-[#1a2b4c] focus:ring-[#1a2b4c] shrink-0"> <span class="leading-relaxed">Học phụ đạo: tăng cường <input type="text" class="w-16 border-b-2 border-gray-400 bg-transparent text-center outline-none font-bold text-[#D2042D]"> tiết/tuần, từ <input type="time" class="border-b-2 border-gray-400 bg-transparent outline-none font-bold text-[#1a2b4c]"> giờ đến <input type="time" class="border-b-2 border-gray-400 bg-transparent outline-none font-bold text-[#1a2b4c]"> giờ các ngày <input type="text" class="border-b-2 border-gray-400 bg-transparent outline-none min-w-[200px] font-bold text-[#1a2b4c]"></span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-3 bg-gray-50 border border-gray-100 hover:border-[#D4AF37] hover:bg-[#fffcf0] rounded-xl transition-all shadow-sm"><input type="checkbox" class="w-6 h-6 mt-0.5 rounded text-[#1a2b4c] focus:ring-[#1a2b4c] shrink-0"> <span class="leading-relaxed">Bài tập/ bài về nhà: <input type="text" class="w-16 border-b-2 border-gray-400 bg-transparent text-center outline-none font-bold text-[#D2042D]"> bài /ngày.</span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-3 bg-gray-50 border border-gray-100 hover:border-[#D4AF37] hover:bg-[#fffcf0] rounded-xl transition-all shadow-sm"><input type="checkbox" class="w-6 h-6 mt-0.5 rounded text-[#1a2b4c] focus:ring-[#1a2b4c] shrink-0"> <span class="leading-relaxed">Phối hợp gia đình: PH hỗ trợ theo dõi con học bài/ làm bài tại nhà. Nếu HS không hiểu, liên lạc với GV để được hướng dẫn.</span></label>
+                        </div>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="bar-chart" class="w-4 h-4"></i> 4. THEO DÕI TIẾN ĐỘ HÀNG TUẦN</div>
+                    <div class="mb-10 overflow-x-auto px-4">
+                        <table class="w-full text-base border-collapse border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+                            <thead class="bg-[#f0f4f8] text-[#1a2b4c]">
+                                <tr>
+                                    <th class="p-4 border border-gray-300 w-24 text-center font-black uppercase text-sm tracking-wide">Tuần</th>
+                                    <th class="p-4 border border-gray-300 font-black uppercase text-sm tracking-wide w-1/2">Nội dung hỗ trợ</th>
+                                    <th class="p-4 border border-gray-300 font-black uppercase text-sm tracking-wide">Đánh giá nhanh (cải thiện/chưa cải thiện)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="font-medium text-gray-800">
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 text-center font-black text-[#1a2b4c] text-lg">1</td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 text-center font-black text-[#1a2b4c] text-lg">2</td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 text-center font-black text-[#1a2b4c] text-lg">3</td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 text-center font-black text-[#1a2b4c] text-lg">4</td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="check-square" class="w-4 h-4"></i> 5. ĐÁNH GIÁ SAU CAN THIỆP</div>
+                    <div class="text-base text-gray-800 space-y-6 px-4 bg-[#f8fafc] p-8 rounded-xl border border-gray-200 shadow-sm mx-4">
+                        <div class="flex flex-wrap gap-10">
+                            <div class="flex items-center gap-3"><span class="font-black text-[#1a2b4c] uppercase tracking-wide text-sm">Ngày đánh giá lại:</span><input type="date" class="form-input py-1.5 w-auto font-bold text-[#1a2b4c]"></div>
+                            <div class="flex items-center gap-3"><span class="font-black text-[#1a2b4c] uppercase tracking-wide text-sm">Kết quả bài KT rà soát:</span><input type="text" class="form-input py-1.5 w-32 text-center font-black text-[#D2042D] text-lg"></div>
+                        </div>
+                        <div class="h-px w-full bg-gray-300 my-2"></div>
+                        <p class="font-black text-[#1a2b4c] text-base uppercase tracking-wide">Ý kiến của GV / CV:</p>
+                        <div class="space-y-4 pl-2 font-medium">
+                            <label class="flex items-start gap-4 cursor-pointer group p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-emerald-500 transition-colors"><input type="radio" name="gv02-eval" class="w-6 h-6 mt-0.5 text-emerald-600 focus:ring-emerald-600 shrink-0"> <span class="leading-relaxed"><strong class="text-emerald-600 text-lg">Đạt:</strong> HS đã lấy lại được kiến thức bị hổng. Trở lại lớp theo lộ trình chính thức.</span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-[#D4AF37] transition-colors"><input type="radio" name="gv02-eval" class="w-6 h-6 mt-0.5 text-[#D4AF37] focus:ring-[#D4AF37] shrink-0"> <span class="leading-relaxed"><strong class="text-[#D4AF37] text-lg">Gia hạn:</strong> cần thêm <input type="text" class="w-16 border-b-2 border-gray-400 bg-transparent text-center outline-none font-bold text-[#1a2b4c]"> tuần hỗ trợ tập trung vào: <input type="text" class="border-b-2 border-gray-400 bg-transparent outline-none min-w-[300px] font-bold text-[#1a2b4c]"></span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-[#D2042D] transition-colors"><input type="radio" name="gv02-eval" class="w-6 h-6 mt-0.5 text-[#D2042D] focus:ring-[#D2042D] shrink-0"> <span class="leading-relaxed"><strong class="text-[#D2042D] text-lg">Điều chỉnh:</strong> đề xuất chuyển lớp/ xuống cấp độ thấp hơn để phù hợp với năng lực thực tế.</span></label>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-16 flex flex-col md:flex-row justify-between text-center gap-10 pb-10 px-10">
+                        <div class="flex-1">
+                            <p class="font-black text-[#1a2b4c] text-sm uppercase tracking-widest mb-1">Chữ ký giáo viên</p>
+                            <p class="text-sm text-gray-500 font-medium italic mb-24">(ký và ghi rõ họ tên)</p>
+                            <div class="border-b-2 border-gray-400 w-56 mx-auto"></div>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-black text-[#1a2b4c] text-sm uppercase tracking-widest mb-1">Chữ ký chuyên viên</p>
+                            <p class="text-sm text-gray-500 font-medium italic mb-24">(ký và ghi rõ họ tên)</p>
+                            <div class="border-b-2 border-gray-400 w-56 mx-auto"></div>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-black text-[#1a2b4c] text-sm uppercase tracking-widest mb-1">Chữ ký phụ huynh</p>
+                            <p class="text-sm text-gray-500 font-medium italic mb-24">(ký và ghi rõ họ tên)</p>
+                            <div class="border-b-2 border-gray-400 w-56 mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= PAGE 3: CV01 ================= -->
+            <div id="page-cv01" class="page-content space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-5xl mx-auto">
+                    <div class="text-center mb-10">
+                        <h2 class="text-2xl font-black text-[#1a2b4c] uppercase tracking-wide mb-2">PHIẾU RÀ SOÁT VÀ KẾ HOẠCH CAN THIỆP HỌC SINH TIỂU HỌC</h2>
+                        <p class="text-base font-bold text-gray-500 mb-6">(Student Intervention & Diagnostic Form)</p>
+                        <div class="flex flex-col md:flex-row items-center justify-center gap-8 bg-[#f8fafc] p-5 rounded-xl border border-gray-200 inline-flex shadow-sm">
+                            <div class="text-sm font-black text-[#1a2b4c] uppercase tracking-wide flex items-center gap-3">Bài kiểm tra: Lesson/Mid-term/Final <input type="text" class="form-input py-1.5 w-32 font-bold"></div>
+                            <div class="text-sm font-black text-[#1a2b4c] uppercase tracking-wide flex items-center gap-3">Ngày kiểm tra: <input type="date" class="form-input py-1.5 w-auto font-bold text-[#1a2b4c]"></div>
+                        </div>
+                        <div class="mt-6 bg-[#fff0f2] border-l-4 border-[#D2042D] p-4 rounded-r-xl inline-block shadow-sm text-left max-w-4xl">
+                            <p class="text-sm text-[#D2042D] font-bold leading-relaxed flex items-start gap-2">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 mt-0.5"></i>
+                                <span>GHI CHÚ: Phiếu áp dụng cho các HS có kết quả bài kiểm tra Lesson-level hoặc Mid-term và Final <span class="font-black underline">dưới 50%</span>.</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="info" class="w-4 h-4"></i> 1. THÔNG TIN CHUNG</div>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 mb-10 px-4">
+                        <div class="md:col-span-3 space-y-5">
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Họ và tên học sinh:</span><input type="text" class="form-input bg-gray-50 flex-1 font-bold"></div>
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Lớp tiếng Anh:</span><input type="text" class="form-input bg-gray-50 flex-1 font-bold"></div>
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Cấp độ CEFR:</span><input type="text" class="form-input bg-gray-50 flex-1 font-bold"></div>
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Giáo viên phụ trách:</span><input type="text" class="form-input bg-gray-50 flex-1 font-bold"></div>
+                            <div class="flex items-center gap-4"><span class="w-40 text-sm font-black text-[#1a2b4c] uppercase tracking-wide">Ngày lập phiếu:</span><input type="date" class="form-input bg-gray-50 flex-1 font-bold text-[#1a2b4c]"></div>
+                        </div>
+                        <div class="md:col-span-2 bg-[#f8fafc] p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <span class="text-sm font-black text-[#1a2b4c] block mb-4 uppercase tracking-wide border-b border-gray-200 pb-2">Lý do rà soát:</span>
+                            <div class="space-y-4 text-sm text-gray-800 font-bold">
+                                <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-[#1a2b4c] focus:ring-[#1a2b4c]"> <span class="shrink-0 group-hover:text-[#D4AF37] transition-colors">Điểm kiểm tra Lesson</span> <input type="text" class="form-input py-1 w-16 text-center font-black text-[#D2042D]"> thấp</label>
+                                <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-[#1a2b4c] focus:ring-[#1a2b4c]"> <span class="shrink-0 group-hover:text-[#D4AF37] transition-colors">Điểm kiểm tra Mid-term</span> <input type="text" class="form-input py-1 w-16 text-center font-black text-[#D2042D]"> thấp</label>
+                                <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-[#1a2b4c] focus:ring-[#1a2b4c]"> <span class="shrink-0 group-hover:text-[#D4AF37] transition-colors">Điểm kiểm tra Final</span> <input type="text" class="form-input py-1 w-16 text-center font-black text-[#D2042D]"> thấp</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="activity" class="w-4 h-4"></i> 2. CHẨN ĐOÁN CHI TIẾT (Diagnostic)</div>
+                    <div class="mb-10 px-4">
+                        <table class="w-full text-base border-collapse border border-gray-300 mb-6 text-center rounded-lg overflow-hidden shadow-sm">
+                            <thead class="bg-[#f0f4f8] text-[#1a2b4c]">
+                                <tr>
+                                    <th class="p-4 border border-gray-300 font-black uppercase text-sm tracking-wide text-left">Kỹ năng</th>
+                                    <th class="p-4 border border-gray-300 w-40 font-black uppercase text-sm tracking-wide">Điểm</th>
+                                    <th class="p-4 border border-gray-300 w-32 font-black uppercase text-sm tracking-wide">Khiên</th>
+                                    <th class="p-4 border border-gray-300 font-black uppercase text-sm tracking-wide text-left">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-800 font-medium">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-4 border border-gray-300 font-bold text-[#1a2b4c] text-left">Listening</td>
+                                    <td class="p-4 border border-gray-300"><input type="text" class="form-input py-1.5 w-full text-center font-bold"></td>
+                                    <td class="p-4 border border-gray-300"><input type="number" class="form-input py-1.5 w-full text-center font-black text-[#D2042D] text-lg bg-red-50 border-red-200"></td>
+                                    <td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-4 border border-gray-300 font-bold text-[#1a2b4c] text-left">Reading & Writing</td>
+                                    <td class="p-4 border border-gray-300"><input type="text" class="form-input py-1.5 w-full text-center font-bold"></td>
+                                    <td class="p-4 border border-gray-300"><input type="number" class="form-input py-1.5 w-full text-center font-black text-[#D2042D] text-lg bg-red-50 border-red-200"></td>
+                                    <td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-4 border border-gray-300 font-bold text-[#1a2b4c] text-left">Speaking</td>
+                                    <td class="p-4 border border-gray-300"><input type="text" class="form-input py-1.5 w-full text-center font-bold"></td>
+                                    <td class="p-4 border border-gray-300"><input type="number" class="form-input py-1.5 w-full text-center font-black text-[#D2042D] text-lg bg-red-50 border-red-200"></td>
+                                    <td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="flex items-start gap-4 text-base text-gray-800 bg-[#f8fafc] p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <span class="font-black text-[#1a2b4c] whitespace-nowrap uppercase tracking-wide text-sm mt-2">Kết luận:</span>
+                            <textarea class="form-input w-full bg-white resize-none h-24 leading-relaxed font-medium" placeholder="Nhập kết luận chi tiết..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="clipboard-check" class="w-4 h-4"></i> 3. KẾ HOẠCH CAN THIỆP (LSP)</div>
+                    <div class="mb-10 px-4">
+                        <div class="flex flex-wrap items-center gap-x-8 gap-y-5 mb-8 text-sm text-gray-800 bg-[#f8fafc] p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <div class="flex items-center gap-2"><span class="font-black text-[#1a2b4c] uppercase tracking-wide">Dự kiến:</span><input type="text" class="w-16 border-b-2 border-gray-400 focus:border-[#1a2b4c] bg-transparent text-center outline-none font-bold text-[#D2042D] text-lg"> <span class="font-bold">ngày/tuần</span></div>
+                            <div class="flex items-center gap-2"><span class="font-black text-[#1a2b4c] uppercase tracking-wide">Thời gian: từ</span><input type="date" class="form-input py-1.5 w-auto font-bold text-[#1a2b4c]"><span class="font-black text-[#1a2b4c] uppercase tracking-wide mx-2">đến</span><input type="date" class="form-input py-1.5 w-auto font-bold text-[#1a2b4c]"></div>
+                            <div class="flex items-center gap-3 w-full mt-2"><span class="font-black text-[#1a2b4c] uppercase tracking-wide">Mục tiêu:</span><input type="text" class="form-input bg-white flex-1 font-medium"></div>
+                        </div>
+                        <p class="font-black text-[#1a2b4c] mb-4 uppercase tracking-wide text-sm">Các biện pháp hỗ trợ cụ thể:</p>
+                        <div class="space-y-4 text-base text-gray-800 font-medium">
+                            <label class="flex items-start gap-4 cursor-pointer group p-3 bg-gray-50 border border-gray-100 hover:border-[#D4AF37] hover:bg-[#fffcf0] rounded-xl transition-all shadow-sm"><input type="checkbox" class="w-6 h-6 mt-0.5 rounded text-[#1a2b4c] focus:ring-[#1a2b4c] shrink-0"> <span class="leading-relaxed">Hỗ trợ tại lớp: ngồi bàn đầu/ tại bàn GV, thầy cô kiểm tra thường xuyên hơn, chỉ định trả lời những câu hỏi vừa sức, thầy cô hướng dẫn riêng khi cả lớp làm bài tập, hoặc sau tiết học.</span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-3 bg-gray-50 border border-gray-100 hover:border-[#D4AF37] hover:bg-[#fffcf0] rounded-xl transition-all shadow-sm"><input type="checkbox" class="w-6 h-6 mt-0.5 rounded text-[#1a2b4c] focus:ring-[#1a2b4c] shrink-0"> <span class="leading-relaxed">Học phụ đạo: tăng cường <input type="text" class="w-16 border-b-2 border-gray-400 bg-transparent text-center outline-none font-bold text-[#D2042D]"> tiết/tuần, từ <input type="time" class="border-b-2 border-gray-400 bg-transparent outline-none font-bold text-[#1a2b4c]"> giờ đến <input type="time" class="border-b-2 border-gray-400 bg-transparent outline-none font-bold text-[#1a2b4c]"> giờ các ngày <input type="text" class="border-b-2 border-gray-400 bg-transparent outline-none min-w-[200px] font-bold text-[#1a2b4c]"></span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-3 bg-gray-50 border border-gray-100 hover:border-[#D4AF37] hover:bg-[#fffcf0] rounded-xl transition-all shadow-sm"><input type="checkbox" class="w-6 h-6 mt-0.5 rounded text-[#1a2b4c] focus:ring-[#1a2b4c] shrink-0"> <span class="leading-relaxed">Bài tập/ bài về nhà: <input type="text" class="w-16 border-b-2 border-gray-400 bg-transparent text-center outline-none font-bold text-[#D2042D]"> bài /ngày.</span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-3 bg-gray-50 border border-gray-100 hover:border-[#D4AF37] hover:bg-[#fffcf0] rounded-xl transition-all shadow-sm"><input type="checkbox" class="w-6 h-6 mt-0.5 rounded text-[#1a2b4c] focus:ring-[#1a2b4c] shrink-0"> <span class="leading-relaxed">Phối hợp gia đình: PH hỗ trợ theo dõi con học bài/ làm bài. Nếu HS không hiểu, liên lạc với GV để được hướng dẫn.</span></label>
+                        </div>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="bar-chart" class="w-4 h-4"></i> 4. THEO DÕI TIẾN ĐỘ HÀNG TUẦN</div>
+                    <div class="mb-10 overflow-x-auto px-4">
+                        <table class="w-full text-base border-collapse border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+                            <thead class="bg-[#f0f4f8] text-[#1a2b4c]">
+                                <tr>
+                                    <th class="p-4 border border-gray-300 w-24 text-center font-black uppercase text-sm tracking-wide">Tuần</th>
+                                    <th class="p-4 border border-gray-300 font-black uppercase text-sm tracking-wide w-1/2">Nội dung hỗ trợ</th>
+                                    <th class="p-4 border border-gray-300 font-black uppercase text-sm tracking-wide">Đánh giá nhanh (cải thiện/chưa cải thiện)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="font-medium text-gray-800">
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 text-center font-black text-[#1a2b4c] text-lg">1</td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 text-center font-black text-[#1a2b4c] text-lg">2</td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 text-center font-black text-[#1a2b4c] text-lg">3</td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="p-4 border border-gray-300 text-center font-black text-[#1a2b4c] text-lg">4</td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td><td class="p-4 border border-gray-300"><input type="text" class="w-full bg-transparent outline-none"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="section-header"><i data-lucide="check-square" class="w-4 h-4"></i> 5. ĐÁNH GIÁ SAU CAN THIỆP</div>
+                    <div class="text-base text-gray-800 space-y-6 px-4 bg-[#f8fafc] p-8 rounded-xl border border-gray-200 shadow-sm mx-4">
+                        <div class="flex flex-wrap gap-10">
+                            <div class="flex items-center gap-3"><span class="font-black text-[#1a2b4c] uppercase tracking-wide text-sm">Ngày đánh giá lại:</span><input type="date" class="form-input py-1.5 w-auto font-bold text-[#1a2b4c]"></div>
+                            <div class="flex items-center gap-3"><span class="font-black text-[#1a2b4c] uppercase tracking-wide text-sm">Kết quả bài KT rà soát:</span><input type="text" class="form-input py-1.5 w-32 text-center font-black text-[#D2042D] text-lg"></div>
+                        </div>
+                        <div class="h-px w-full bg-gray-300 my-2"></div>
+                        <p class="font-black text-[#1a2b4c] text-base uppercase tracking-wide">Ý kiến của GV / CV:</p>
+                        <div class="space-y-4 pl-2 font-medium">
+                            <label class="flex items-start gap-4 cursor-pointer group p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-emerald-500 transition-colors"><input type="radio" name="cv01-eval" class="w-6 h-6 mt-0.5 text-emerald-600 focus:ring-emerald-600 shrink-0"> <span class="leading-relaxed"><strong class="text-emerald-600 text-lg">Đạt:</strong> HS đã lấy lại được kiến thức bị hổng. Trở lại lớp theo lộ trình chính thức.</span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-[#D4AF37] transition-colors"><input type="radio" name="cv01-eval" class="w-6 h-6 mt-0.5 text-[#D4AF37] focus:ring-[#D4AF37] shrink-0"> <span class="leading-relaxed"><strong class="text-[#D4AF37] text-lg">Gia hạn:</strong> cần thêm <input type="text" class="w-16 border-b-2 border-gray-400 bg-transparent text-center outline-none font-bold text-[#1a2b4c]"> tuần hỗ trợ tập trung vào: <input type="text" class="border-b-2 border-gray-400 bg-transparent outline-none min-w-[300px] font-bold text-[#1a2b4c]"></span></label>
+                            <label class="flex items-start gap-4 cursor-pointer group p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-[#D2042D] transition-colors"><input type="radio" name="cv01-eval" class="w-6 h-6 mt-0.5 text-[#D2042D] focus:ring-[#D2042D] shrink-0"> <span class="leading-relaxed"><strong class="text-[#D2042D] text-lg">Điều chỉnh:</strong> đề xuất chuyển lớp/ xuống cấp độ thấp hơn để phù hợp với năng lực thực tế.</span></label>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-16 flex flex-col md:flex-row justify-between text-center gap-10 pb-10 px-10">
+                        <div class="flex-1">
+                            <p class="font-black text-[#1a2b4c] text-sm uppercase tracking-widest mb-1">Chữ ký giáo viên</p>
+                            <p class="text-sm text-gray-500 font-medium italic mb-24">(ký và ghi rõ họ tên)</p>
+                            <div class="border-b-2 border-gray-400 w-56 mx-auto"></div>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-black text-[#1a2b4c] text-sm uppercase tracking-widest mb-1">Chữ ký chuyên viên</p>
+                            <p class="text-sm text-gray-500 font-medium italic mb-24">(ký và ghi rõ họ tên)</p>
+                            <div class="border-b-2 border-gray-400 w-56 mx-auto"></div>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-black text-[#1a2b4c] text-sm uppercase tracking-widest mb-1">Chữ ký phụ huynh</p>
+                            <p class="text-sm text-gray-500 font-medium italic mb-24">(ký và ghi rõ họ tên)</p>
+                            <div class="border-b-2 border-gray-400 w-56 mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ================= PAGE 4: CV02 ================= -->
+            <div id="page-cv02" class="page-content space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-6">
+                    <div class="flex justify-between items-center mb-8 border-b border-gray-200 pb-6">
+                        <h2 class="text-2xl font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wide">
+                            <div class="bg-[#1a2b4c] p-2.5 rounded-xl text-[#D4AF37] shadow-inner"><i data-lucide="bar-chart" class="w-6 h-6"></i></div> 
+                            Bảng Theo Dõi Tiến Độ & Biểu Đồ
+                        </h2>
+                        <select id="cv02-level" class="form-input w-64 font-black text-[#1a2b4c] text-lg border-2 border-[#1a2b4c]/30 shadow-sm" onchange="renderCV02Table()">
+                            <option value="Pre-A1">Pre-A1</option>
+                            <option value="Pre-A1 Starters">Pre-A1 Starters</option>
+                            <option value="A1 Movers">A1 Movers</option>
+                            <option value="A2 Flyers">A2 Flyers</option>
+                            <option value="A2 KET">A2 KET</option>
+                            <option value="B1 PET">B1 PET</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-gray-300 shadow-sm">
+                        <table class="w-full text-sm text-center border-collapse">
+                            <thead class="bg-[#1a2b4c] text-white font-bold text-[13px] uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-4 border-r border-[#2a3f6c] w-40" rowspan="2">Papers</th>
+                                    <th class="p-4 border-r border-[#2a3f6c] w-32" rowspan="2">Tests</th>
+                                    <th class="p-4 border-r border-[#2a3f6c]" colspan="7">Parts (Max Score)</th>
+                                    <th class="p-4 border-r border-[#2a3f6c] w-24" rowspan="2">Total</th>
+                                    <th class="p-4 border-r border-[#2a3f6c] text-[#D4AF37] w-32" rowspan="2" id="cv02-shield-hdr">Shields/Grade</th>
+                                    <th class="p-4 w-32" rowspan="2">RAG</th>
+                                </tr>
+                                <tr>
+                                    <th class="p-2 border-r border-t border-[#2a3f6c] w-14 bg-[#2a3f6c]">P1</th>
+                                    <th class="p-2 border-r border-t border-[#2a3f6c] w-14 bg-[#2a3f6c]">P2</th>
+                                    <th class="p-2 border-r border-t border-[#2a3f6c] w-14 bg-[#2a3f6c]">P3</th>
+                                    <th class="p-2 border-r border-t border-[#2a3f6c] w-14 bg-[#2a3f6c]">P4</th>
+                                    <th class="p-2 border-r border-t border-[#2a3f6c] w-14 bg-[#2a3f6c]">P5</th>
+                                    <th class="p-2 border-r border-t border-[#2a3f6c] w-14 bg-[#2a3f6c]">P6</th>
+                                    <th class="p-2 border-t border-[#2a3f6c] w-14 bg-[#2a3f6c]">P7</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cv02-tbody" class="divide-y divide-gray-200 text-gray-800 font-medium bg-white">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 h-[500px] flex flex-col">
+                    <h3 class="font-black text-[#1a2b4c] mb-6 uppercase text-base tracking-wide flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-[#D2042D]"></i> Biểu đồ tiến độ dự báo
+                    </h3>
+                    <div class="flex-1 relative w-full h-full">
+                        <canvas id="cv02Chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= PAGE 5: PH01 Tuần ================= -->
+            <div id="page-ph01-tuan" class="page-content space-y-6">
+                <div class="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden max-w-5xl mx-auto my-8">
+                    <!-- Top Banner Của Chứng chỉ -->
+                    <div class="bg-[#1a2b4c] text-white p-10 text-center relative border-b-[6px] border-[#D4AF37]">
+                        <div class="absolute top-8 right-8 opacity-10"><i data-lucide="mail" class="w-24 h-24 text-[#D4AF37]"></i></div>
+                        <div class="absolute top-8 left-8 opacity-10"><i data-lucide="graduation-cap" class="w-24 h-24 text-[#D4AF37]"></i></div>
+                        <h2 class="text-sm font-black tracking-[0.25em] uppercase mb-3 text-[#D4AF37]">NĂM HỌC 2026-2027</h2>
+                        <h1 class="text-3xl md:text-4xl font-black mb-4 tracking-wide text-shadow">PHIẾU BÁO CÁO TUẦN <input type="text" class="w-16 bg-transparent border-b-2 border-[#D4AF37] outline-none text-center font-black focus:border-white transition-colors text-white" placeholder="..."> – THÁNG <input type="text" class="w-16 bg-transparent border-b-2 border-[#D4AF37] outline-none text-center font-black focus:border-white transition-colors text-white" placeholder="..."></h1>
+                        <p class="text-gray-200 text-lg font-medium flex items-center justify-center gap-2 tracking-wide">(Từ ngày <input type="date" class="bg-transparent border-b border-white/30 text-white w-auto py-1 outline-none font-bold text-center"> đến ngày <input type="date" class="bg-transparent border-b border-white/30 text-white w-auto py-1 outline-none font-bold text-center">)</p>
+                    </div>
+
+                    <div class="p-12 space-y-10">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-6 text-base border-b-2 border-gray-100 pb-10">
+                            <div class="md:col-span-2"><span class="text-gray-400 block mb-2 font-black text-xs uppercase tracking-widest">Họ và tên học sinh</span><input type="text" class="w-full font-black text-2xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c] placeholder-gray-200" placeholder="Nhập họ tên..."></div>
+                            <div class="md:col-span-2"><span class="text-gray-400 block mb-2 font-black text-xs uppercase tracking-widest">Lớp</span><input type="text" class="w-full font-black text-2xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c] placeholder-gray-200" placeholder="Tên lớp..."></div>
+                            <div class="md:col-span-2"><span class="text-gray-400 block mb-2 font-black text-xs uppercase tracking-widest">Lớp tiếng Anh</span><input type="text" class="w-full font-black text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c] placeholder-gray-200" placeholder="Lớp T.A..."></div>
+                            <div class="md:col-span-2"><span class="text-gray-400 block mb-2 font-black text-xs uppercase tracking-widest">Giáo viên tiếng Anh</span><input type="text" class="w-full font-black text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c] placeholder-gray-200" placeholder="Tên GV..."></div>
+                        </div>
+
+                        <div class="rounded-xl overflow-hidden border border-gray-300 shadow-sm">
+                            <table class="w-full text-base border-collapse">
+                                <thead class="bg-[#f8fafc] text-[#1a2b4c]">
+                                    <tr>
+                                        <th class="p-5 border-b border-r border-gray-300 w-16 text-center font-black uppercase tracking-wider text-sm">Stt</th>
+                                        <th class="p-5 border-b border-r border-gray-300 text-left font-black uppercase tracking-wider text-sm">Các giá trị học tập</th>
+                                        <th class="p-5 border-b border-r border-gray-300 w-28 text-center font-black uppercase tracking-wider text-sm">Xuất sắc</th>
+                                        <th class="p-5 border-b border-r border-gray-300 w-24 text-center font-black uppercase tracking-wider text-sm">Đạt</th>
+                                        <th class="p-5 border-b border-r border-gray-300 w-32 text-center font-black uppercase tracking-wider text-sm">Cần hỗ trợ</th>
+                                        <th class="p-5 border-b border-gray-300 text-left font-black uppercase tracking-wider text-sm w-1/4">Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-800 font-medium">
+                                    <tr class="hover:bg-gray-50 transition-colors"><td class="p-4 border-b border-r border-gray-200 text-center font-black text-[#1a2b4c] text-lg">1</td><td class="p-4 border-b border-r border-gray-200 font-bold">Hiểu bài, ghi nhớ:</td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht1" class="w-6 h-6 accent-[#1a2b4c] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht1" class="w-6 h-6 accent-[#D4AF37] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht1" class="w-6 h-6 accent-[#D2042D] cursor-pointer"></td><td class="p-4 border-b border-gray-200"><input type="text" class="w-full bg-transparent border-b border-transparent focus:border-[#1a2b4c] outline-none text-sm pb-1 transition-colors"></td></tr>
+                                    <tr class="hover:bg-gray-50 transition-colors"><td class="p-4 border-b border-r border-gray-200 text-center font-black text-[#1a2b4c] text-lg">2</td><td class="p-4 border-b border-r border-gray-200 font-bold">Hoàn thành các hoạt động thực hành:</td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht2" class="w-6 h-6 accent-[#1a2b4c] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht2" class="w-6 h-6 accent-[#D4AF37] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht2" class="w-6 h-6 accent-[#D2042D] cursor-pointer"></td><td class="p-4 border-b border-gray-200"><input type="text" class="w-full bg-transparent border-b border-transparent focus:border-[#1a2b4c] outline-none text-sm pb-1 transition-colors"></td></tr>
+                                    <tr class="hover:bg-gray-50 transition-colors"><td class="p-4 border-b border-r border-gray-200 text-center font-black text-[#1a2b4c] text-lg">3</td><td class="p-4 border-b border-r border-gray-200 font-bold">Thái độ học tập:</td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht3" class="w-6 h-6 accent-[#1a2b4c] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht3" class="w-6 h-6 accent-[#D4AF37] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht3" class="w-6 h-6 accent-[#D2042D] cursor-pointer"></td><td class="p-4 border-b border-gray-200"><input type="text" class="w-full bg-transparent border-b border-transparent focus:border-[#1a2b4c] outline-none text-sm pb-1 transition-colors"></td></tr>
+                                    <tr class="hover:bg-gray-50 transition-colors"><td class="p-4 border-b border-r border-gray-200 text-center font-black text-[#1a2b4c] text-lg">4</td><td class="p-4 border-b border-r border-gray-200 font-bold">Bài tập (về nhà):</td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht4" class="w-6 h-6 accent-[#1a2b4c] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht4" class="w-6 h-6 accent-[#D4AF37] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht4" class="w-6 h-6 accent-[#D2042D] cursor-pointer"></td><td class="p-4 border-b border-gray-200"><input type="text" class="w-full bg-transparent border-b border-transparent focus:border-[#1a2b4c] outline-none text-sm pb-1 transition-colors"></td></tr>
+                                    <tr class="hover:bg-gray-50 transition-colors"><td class="p-4 border-b border-r border-gray-200 text-center font-black text-[#1a2b4c] text-lg">5</td><td class="p-4 border-b border-r border-gray-200 font-bold">Tự tin sử dụng tiếng Anh:</td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht5" class="w-6 h-6 accent-[#1a2b4c] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht5" class="w-6 h-6 accent-[#D4AF37] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht5" class="w-6 h-6 accent-[#D2042D] cursor-pointer"></td><td class="p-4 border-b border-gray-200"><input type="text" class="w-full bg-transparent border-b border-transparent focus:border-[#1a2b4c] outline-none text-sm pb-1 transition-colors"></td></tr>
+                                    <tr class="hover:bg-gray-50 transition-colors"><td class="p-4 border-b border-r border-gray-200 text-center font-black text-[#1a2b4c] text-lg">6</td><td class="p-4 border-b border-r border-gray-200 font-bold">Chuyên cần:</td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht6" class="w-6 h-6 accent-[#1a2b4c] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht6" class="w-6 h-6 accent-[#D4AF37] cursor-pointer"></td><td class="p-4 border-b border-r border-gray-200 text-center"><input type="radio" name="pht6" class="w-6 h-6 accent-[#D2042D] cursor-pointer"></td><td class="p-4 border-b border-gray-200"><input type="text" class="w-full bg-transparent border-b border-transparent focus:border-[#1a2b4c] outline-none text-sm pb-1 transition-colors"></td></tr>
+                                    <tr class="hover:bg-gray-50 transition-colors"><td class="p-4 border-r border-gray-200 text-center font-black text-[#1a2b4c] text-lg">7</td><td class="p-4 border-r border-gray-200 font-bold">Tác phong:</td><td class="p-4 border-r border-gray-200 text-center"><input type="radio" name="pht7" class="w-6 h-6 accent-[#1a2b4c] cursor-pointer"></td><td class="p-4 border-r border-gray-200 text-center"><input type="radio" name="pht7" class="w-6 h-6 accent-[#D4AF37] cursor-pointer"></td><td class="p-4 border-r border-gray-200 text-center"><input type="radio" name="pht7" class="w-6 h-6 accent-[#D2042D] cursor-pointer"></td><td class="p-4"><input type="text" class="w-full bg-transparent border-b border-transparent focus:border-[#1a2b4c] outline-none text-sm pb-1 transition-colors"></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="bg-blue-50/50 rounded-xl p-8 border border-blue-100 mt-8 relative shadow-inner">
+                            <h3 class="font-black text-[#1a2b4c] mb-4 uppercase tracking-wide flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5 text-[#D4AF37]"></i> Nhận xét của giáo viên:</h3>
+                            <textarea class="form-input w-full bg-white/80 resize-none h-32 leading-relaxed font-medium focus:bg-white transition-colors border-gray-300" placeholder="Nhập nhận xét chi tiết..."></textarea>
+                            
+                            <div class="mt-10 flex justify-end">
+                                <div class="text-center w-72">
+                                    <p class="text-base font-black text-[#1a2b4c] mb-24 uppercase tracking-widest">Giáo viên ký tên</p>
+                                    <div class="border-b-[3px] border-[#1a2b4c]/20 w-full mx-auto"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ================= PAGE 6: PH01 Lesson ================= -->
+            <div id="page-ph01-lesson" class="page-content space-y-6">
+                <div class="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden max-w-5xl mx-auto my-8">
+                    <!-- Banner -->
+                    <div class="bg-[#1a2b4c] text-white p-10 text-center relative border-b-[6px] border-[#D4AF37]">
+                        <div class="absolute top-8 right-8 opacity-10"><i data-lucide="file-check-2" class="w-24 h-24 text-[#D4AF37]"></i></div>
+                        <h2 class="text-sm font-black tracking-[0.25em] uppercase mb-3 text-[#D4AF37]">NĂM HỌC 2026-2027</h2>
+                        <h1 class="text-3xl md:text-4xl font-black mb-8 tracking-wide text-shadow">BÁO CÁO KẾT QUẢ TIẾNG ANH CAMBRIDGE</h1>
+                        
+                        <div class="text-white/90 text-lg flex flex-wrap items-center justify-center gap-4 font-bold bg-black/20 inline-flex px-8 py-3 rounded-full shadow-inner border border-white/10">
+                            Bài kiểm tra: Lesson 
+                            <select id="ph-lesson-name" onchange="syncPHLesson()" class="bg-transparent border-b-2 border-[#D4AF37] outline-none text-center font-black w-16 hover:border-white transition-colors text-white text-xl cursor-pointer">
+                                <option value="1" class="text-gray-800">1</option><option value="2" class="text-gray-800">2</option><option value="3" class="text-gray-800">3</option><option value="4" class="text-gray-800">4</option><option value="5" class="text-gray-800">5</option><option value="6" class="text-gray-800">6</option><option value="7" class="text-gray-800">7</option><option value="8" class="text-gray-800">8</option>
+                            </select> <span class="mx-3 opacity-30">|</span> 
+                            Cấp độ: <select id="phl-level" onchange="syncLevelFromPH(this.value)" class="bg-transparent border-b-2 border-[#D4AF37] outline-none text-center font-black w-48 hover:border-white transition-colors text-white text-xl cursor-pointer">
+                                <option value="Pre-A1" class="text-gray-800">Pre-A1</option><option value="Pre-A1 Starters" class="text-gray-800">Pre-A1 Starters</option><option value="A1 Movers" class="text-gray-800">A1 Movers</option><option value="A2 Flyers" class="text-gray-800">A2 Flyers</option><option value="A2 KET" class="text-gray-800">A2 KET</option><option value="B1 PET" class="text-gray-800">B1 PET</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="p-12 space-y-12">
+                        <!-- Thông tin -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-base border-b-2 border-gray-100 pb-10">
+                            <div class="md:col-span-2"><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Họ và tên học sinh</span><input type="text" class="w-full font-black text-2xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                            <div><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Lớp tiếng Anh</span><input type="text" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                            <div><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Ngày kiểm tra</span><input type="date" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]"></div>
+                            <div class="md:col-span-4"><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Giáo viên AV</span><input type="text" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                        </div>
+
+                        <!-- Tổng quan bảng điểm tự động -->
+                        <div>
+                            <div class="section-header !text-base !mb-6 w-full">TỔNG QUAN KẾT QUẢ (OVERALL PERFORMANCE)</div>
+                            <div class="overflow-x-auto rounded-xl border border-gray-300 shadow-sm">
+                                <table class="w-full text-base text-center border-collapse bg-white">
+                                    <thead class="bg-[#f8fafc] text-[#1a2b4c] border-b border-gray-300">
+                                        <tr>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Kỹ năng (Skills)</th>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Điểm (Scores)</th>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Khiên/Grade (Shields)</th>
+                                            <th class="p-5 w-1/4 font-black uppercase text-sm tracking-wider">Mã màu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 font-bold text-gray-800">
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-6 border-r border-gray-200 text-left flex items-center gap-4"><i data-lucide="headphones" class="w-6 h-6 text-[#1a2b4c]"></i> <span class="text-lg">Listening</span></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phl-lis-score" class="w-full bg-transparent border-none outline-none text-center text-2xl font-black text-[#1a2b4c]" placeholder="-"></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phl-lis-shield" class="w-16 mx-auto bg-gray-50 border border-gray-200 rounded outline-none text-center p-2 text-2xl font-black block" placeholder="-"></td>
+                                            <td class="p-6"><input type="text" id="phl-lis-rag" class="w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400" placeholder="-"></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-6 border-r border-gray-200 text-left flex items-center gap-4"><i data-lucide="book-open" class="w-6 h-6 text-[#1a2b4c]"></i> <span class="text-lg">Reading & Writing</span></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phl-rw-score" class="w-full bg-transparent border-none outline-none text-center text-2xl font-black text-[#1a2b4c]" placeholder="-"></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phl-rw-shield" class="w-16 mx-auto bg-gray-50 border border-gray-200 rounded outline-none text-center p-2 text-2xl font-black block" placeholder="-"></td>
+                                            <td class="p-6"><input type="text" id="phl-rw-rag" class="w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400" placeholder="-"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Phân tích chi tiết -->
+                        <div>
+                            <div class="section-header !text-base !mb-8 w-full">PHÂN TÍCH NĂNG LỰC CHI TIẾT (DETAILED SKILLS ANALYSIS)</div>
+                            
+                            <!-- Listening -->
+                            <div class="mb-10 border border-gray-300 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row bg-white">
+                                <div class="bg-slate-50 p-8 border-b md:border-b-0 md:border-r border-gray-200 md:w-1/3 shrink-0">
+                                    <div class="font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wider text-lg mb-6"><i data-lucide="headphones" class="w-7 h-7 text-[#D4AF37]"></i> LISTENING</div>
+                                    <p class="font-black text-gray-400 mb-4 uppercase text-xs tracking-widest border-b border-gray-200 pb-2">Khả năng đánh giá:</p>
+                                    <ul class="list-disc pl-5 space-y-3 text-gray-700 text-base font-bold">
+                                        <li>Nghe chi tiết và nhớ thông tin</li>
+                                        <li>Nghe số</li>
+                                        <li>Chính tả</li>
+                                        <li>Trình bày bài làm</li>
+                                    </ul>
+                                </div>
+                                <div class="p-8 md:w-2/3 flex flex-col justify-center gap-8">
+                                    <div><span class="text-emerald-600 font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="plus-circle" class="w-5 h-5"></i> Điểm mạnh:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-emerald-500 outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D2042D] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="minus-circle" class="w-5 h-5"></i> Điểm cần cải thiện:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D2042D] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D4AF37] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="lightbulb" class="w-5 h-5"></i> Đề xuất:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D4AF37] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                </div>
+                            </div>
+
+                            <!-- Reading & Writing -->
+                            <div class="mb-10 border border-gray-300 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row bg-white">
+                                <div class="bg-slate-50 p-8 border-b md:border-b-0 md:border-r border-gray-200 md:w-1/3 shrink-0">
+                                    <div class="font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wider text-lg mb-6"><i data-lucide="book-open" class="w-7 h-7 text-[#D4AF37]"></i> READING & WRITING</div>
+                                    <p class="font-black text-gray-400 mb-4 uppercase text-xs tracking-widest border-b border-gray-200 pb-2">Khả năng đánh giá:</p>
+                                    <ul class="list-disc pl-5 space-y-3 text-gray-700 text-base font-bold">
+                                        <li>Đọc hiểu nhanh và ghi nhớ</li>
+                                        <li>Hiểu cấu trúc</li>
+                                        <li>Văn phạm</li>
+                                        <li>Từ vựng</li>
+                                        <li>Chính tả</li>
+                                    </ul>
+                                </div>
+                                <div class="p-8 md:w-2/3 flex flex-col justify-center gap-8">
+                                    <div><span class="text-emerald-600 font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="plus-circle" class="w-5 h-5"></i> Điểm mạnh:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-emerald-500 outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D2042D] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="minus-circle" class="w-5 h-5"></i> Điểm cần cải thiện:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D2042D] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D4AF37] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="lightbulb" class="w-5 h-5"></i> Đề xuất:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D4AF37] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ký tên -->
+                        <div class="bg-blue-50/50 rounded-xl p-8 border border-blue-100 mt-10 relative shadow-inner">
+                            <h3 class="font-black text-[#1a2b4c] flex items-center gap-3 mb-5 uppercase tracking-wider text-base"><i data-lucide="pen-tool" class="w-6 h-6 text-[#D4AF37]"></i> Lời khuyên từ giáo viên (Teacher's Advice)</h3>
+                            <textarea class="form-input w-full bg-white/80 text-base text-gray-800 resize-none h-32 leading-relaxed focus:bg-white transition-colors" placeholder="Viết lời khuyên chi tiết tại đây..."></textarea>
+                            
+                            <div class="mt-16 pt-8 flex justify-between px-10 border-t-2 border-[#1a2b4c]/10">
+                                <div class="text-center w-64">
+                                    <p class="text-base font-black text-[#1a2b4c] mb-1 uppercase tracking-widest">Chữ ký phụ huynh</p>
+                                    <span class="font-bold italic text-sm text-gray-500 mb-24 block">(Ký và ghi rõ họ tên)</span>
+                                    <div class="border-b-[3px] border-[#1a2b4c]/20 w-full mx-auto"></div>
+                                </div>
+                                <div class="text-center w-64">
+                                    <p class="text-base font-black text-[#1a2b4c] mb-1 uppercase tracking-widest">Giáo viên xác nhận</p>
+                                    <span class="font-bold italic text-sm text-gray-500 mb-24 block">(Ký và ghi rõ họ tên)</span>
+                                    <div class="border-b-[3px] border-[#1a2b4c]/20 w-full mx-auto"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ================= PAGE 7: PH01 Mid-term ================= -->
+            <div id="page-ph01-midterm" class="page-content space-y-6">
+                <div class="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden max-w-5xl mx-auto my-8">
+                    <!-- Banner -->
+                    <div class="bg-[#1a2b4c] text-white p-10 text-center relative border-b-[6px] border-[#D4AF37]">
+                        <div class="absolute top-8 right-8 opacity-10"><i data-lucide="award" class="w-24 h-24 text-[#D4AF37]"></i></div>
+                        <h2 class="text-sm font-black tracking-[0.25em] uppercase mb-3 text-[#D4AF37]">NĂM HỌC 2026-2027</h2>
+                        <h1 class="text-3xl md:text-4xl font-black mb-8 tracking-wide text-shadow">BÁO CÁO KẾT QUẢ TIẾNG ANH CAMBRIDGE</h1>
+                        
+                        <div class="text-white/90 text-lg flex flex-wrap items-center justify-center gap-4 font-bold bg-black/20 inline-flex px-8 py-3 rounded-full shadow-inner border border-white/10">
+                            Bài kiểm tra: Mid-term 
+                            <select id="phm-num" onchange="syncPHMidterm()" class="bg-transparent border-b-2 border-[#D4AF37] outline-none text-center font-black w-16 hover:border-white transition-colors text-white text-xl cursor-pointer">
+                                <option value="1" class="text-gray-800">1</option><option value="2" class="text-gray-800">2</option>
+                            </select> <span class="mx-3 opacity-30">|</span> 
+                            Cấp độ: <select id="phm-level" onchange="syncLevelFromPH(this.value)" class="bg-transparent border-b-2 border-[#D4AF37] outline-none text-center font-black w-48 hover:border-white transition-colors text-white text-xl cursor-pointer">
+                                <option value="Pre-A1" class="text-gray-800">Pre-A1</option><option value="Pre-A1 Starters" class="text-gray-800">Pre-A1 Starters</option><option value="A1 Movers" class="text-gray-800">A1 Movers</option><option value="A2 Flyers" class="text-gray-800">A2 Flyers</option><option value="A2 KET" class="text-gray-800">A2 KET</option><option value="B1 PET" class="text-gray-800">B1 PET</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="p-12 space-y-12">
+                        <!-- Thông tin -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-base border-b-2 border-gray-100 pb-10">
+                            <div class="md:col-span-2"><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Họ và tên học sinh</span><input type="text" class="w-full font-black text-2xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                            <div><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Lớp tiếng Anh</span><input type="text" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                            <div><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Ngày kiểm tra</span><input type="date" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]"></div>
+                            <div class="md:col-span-4"><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Giáo viên AV</span><input type="text" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                        </div>
+
+                        <!-- Tổng quan bảng điểm tự động -->
+                        <div>
+                            <div class="section-header !text-base !mb-6 w-full">TỔNG QUAN KẾT QUẢ (OVERALL PERFORMANCE)</div>
+                            <div class="overflow-x-auto rounded-xl border border-gray-300 shadow-sm">
+                                <table class="w-full text-base text-center border-collapse bg-white">
+                                    <thead class="bg-[#f8fafc] text-[#1a2b4c] border-b border-gray-300">
+                                        <tr>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Kỹ năng (Skills)</th>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Điểm (Scores)</th>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Khiên/Grade (Shields)</th>
+                                            <th class="p-5 w-1/4 font-black uppercase text-sm tracking-wider">Mã màu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 font-bold text-gray-800">
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-6 border-r border-gray-200 text-left flex items-center gap-4"><i data-lucide="headphones" class="w-6 h-6 text-[#1a2b4c]"></i> <span class="text-lg">Listening</span></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phm-lis-score" class="w-full bg-transparent border-none outline-none text-center text-2xl font-black text-[#1a2b4c]" placeholder="-"></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phm-lis-shield" class="w-16 mx-auto bg-gray-50 border border-gray-200 rounded outline-none text-center p-2 text-2xl font-black block" placeholder="-"></td>
+                                            <td class="p-6"><input type="text" id="phm-lis-rag" class="w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400" placeholder="-"></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-6 border-r border-gray-200 text-left flex items-center gap-4"><i data-lucide="book-open" class="w-6 h-6 text-[#1a2b4c]"></i> <span class="text-lg">Reading & Writing</span></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phm-rw-score" class="w-full bg-transparent border-none outline-none text-center text-2xl font-black text-[#1a2b4c]" placeholder="-"></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phm-rw-shield" class="w-16 mx-auto bg-gray-50 border border-gray-200 rounded outline-none text-center p-2 text-2xl font-black block" placeholder="-"></td>
+                                            <td class="p-6"><input type="text" id="phm-rw-rag" class="w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400" placeholder="-"></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-6 border-r border-gray-200 text-left flex items-center gap-4"><i data-lucide="mic" class="w-6 h-6 text-[#1a2b4c]"></i> <span class="text-lg">Speaking</span></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phm-spk-score" class="w-full bg-transparent border-none outline-none text-center text-2xl font-black text-[#1a2b4c]" placeholder="-"></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phm-spk-shield" class="w-16 mx-auto bg-gray-50 border border-gray-200 rounded outline-none text-center p-2 text-2xl font-black block" placeholder="-"></td>
+                                            <td class="p-6"><input type="text" id="phm-spk-rag" class="w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400" placeholder="-"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Phân tích chi tiết -->
+                        <div>
+                            <div class="section-header !text-base !mb-8 w-full">PHÂN TÍCH NĂNG LỰC CHI TIẾT (DETAILED SKILLS ANALYSIS)</div>
+                            
+                            <!-- Listening -->
+                            <div class="mb-10 border border-gray-300 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row bg-white">
+                                <div class="bg-slate-50 p-8 border-b md:border-b-0 md:border-r border-gray-200 md:w-1/3 shrink-0">
+                                    <div class="font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wider text-lg mb-6"><i data-lucide="headphones" class="w-7 h-7 text-[#D4AF37]"></i> LISTENING</div>
+                                    <p class="font-black text-gray-400 mb-4 uppercase text-xs tracking-widest border-b border-gray-200 pb-2">Khả năng đánh giá:</p>
+                                    <ul class="list-disc pl-5 space-y-3 text-gray-700 text-base font-bold">
+                                        <li>Nghe chi tiết và nhớ thông tin</li>
+                                        <li>Nghe số</li>
+                                        <li>Chính tả</li>
+                                        <li>Trình bày bài làm</li>
+                                    </ul>
+                                </div>
+                                <div class="p-8 md:w-2/3 flex flex-col justify-center gap-8">
+                                    <div><span class="text-emerald-600 font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="plus-circle" class="w-5 h-5"></i> Điểm mạnh:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-emerald-500 outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D2042D] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="minus-circle" class="w-5 h-5"></i> Điểm cần cải thiện:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D2042D] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D4AF37] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="lightbulb" class="w-5 h-5"></i> Đề xuất:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D4AF37] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                </div>
+                            </div>
+
+                            <!-- Reading & Writing -->
+                            <div class="mb-10 border border-gray-300 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row bg-white">
+                                <div class="bg-slate-50 p-8 border-b md:border-b-0 md:border-r border-gray-200 md:w-1/3 shrink-0">
+                                    <div class="font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wider text-lg mb-6"><i data-lucide="book-open" class="w-7 h-7 text-[#D4AF37]"></i> READING & WRITING</div>
+                                    <p class="font-black text-gray-400 mb-4 uppercase text-xs tracking-widest border-b border-gray-200 pb-2">Khả năng đánh giá:</p>
+                                    <ul class="list-disc pl-5 space-y-3 text-gray-700 text-base font-bold">
+                                        <li>Đọc hiểu nhanh và ghi nhớ</li>
+                                        <li>Hiểu cấu trúc</li>
+                                        <li>Văn phạm</li>
+                                        <li>Từ vựng</li>
+                                        <li>Chính tả</li>
+                                    </ul>
+                                </div>
+                                <div class="p-8 md:w-2/3 flex flex-col justify-center gap-8">
+                                    <div><span class="text-emerald-600 font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="plus-circle" class="w-5 h-5"></i> Điểm mạnh:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-emerald-500 outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D2042D] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="minus-circle" class="w-5 h-5"></i> Điểm cần cải thiện:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D2042D] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D4AF37] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="lightbulb" class="w-5 h-5"></i> Đề xuất:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D4AF37] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                </div>
+                            </div>
+
+                            <!-- Speaking -->
+                            <div class="mb-10 border border-gray-300 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row bg-white">
+                                <div class="bg-slate-50 p-8 border-b md:border-b-0 md:border-r border-gray-200 md:w-1/3 shrink-0">
+                                    <div class="font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wider text-lg mb-6"><i data-lucide="mic" class="w-7 h-7 text-[#D4AF37]"></i> SPEAKING</div>
+                                    <p class="font-black text-gray-400 mb-4 uppercase text-xs tracking-widest border-b border-gray-200 pb-2">Khả năng đánh giá:</p>
+                                    <ul class="list-disc pl-5 space-y-3 text-gray-700 text-base font-bold">
+                                        <li>Từ vựng và văn phạm</li>
+                                        <li>Ngữ âm và Phát âm</li>
+                                        <li>Tương tác và phản xạ</li>
+                                    </ul>
+                                </div>
+                                <div class="p-8 md:w-2/3 flex flex-col justify-center gap-8">
+                                    <div><span class="text-emerald-600 font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="plus-circle" class="w-5 h-5"></i> Điểm mạnh:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-emerald-500 outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D2042D] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="minus-circle" class="w-5 h-5"></i> Điểm cần cải thiện:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D2042D] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D4AF37] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="lightbulb" class="w-5 h-5"></i> Đề xuất:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D4AF37] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ký tên -->
+                        <div class="bg-blue-50/50 rounded-xl p-8 border border-blue-100 mt-10 relative shadow-inner">
+                            <h3 class="font-black text-[#1a2b4c] flex items-center gap-3 mb-5 uppercase tracking-wider text-base"><i data-lucide="pen-tool" class="w-6 h-6 text-[#D4AF37]"></i> Lời khuyên từ giáo viên (Teacher's Advice)</h3>
+                            <textarea class="form-input w-full bg-white/80 text-base text-gray-800 resize-none h-32 leading-relaxed focus:bg-white transition-colors" placeholder="Viết lời khuyên chi tiết tại đây..."></textarea>
+                            
+                            <div class="mt-16 pt-8 flex justify-between px-10 border-t-2 border-[#1a2b4c]/10">
+                                <div class="text-center w-64">
+                                    <p class="text-base font-black text-[#1a2b4c] mb-1 uppercase tracking-widest">Chữ ký phụ huynh</p>
+                                    <span class="font-bold italic text-sm text-gray-500 mb-24 block">(Ký và ghi rõ họ tên)</span>
+                                    <div class="border-b-[3px] border-[#1a2b4c]/20 w-full mx-auto"></div>
+                                </div>
+                                <div class="text-center w-64">
+                                    <p class="text-base font-black text-[#1a2b4c] mb-1 uppercase tracking-widest">Giáo viên xác nhận</p>
+                                    <span class="font-bold italic text-sm text-gray-500 mb-24 block">(Ký và ghi rõ họ tên)</span>
+                                    <div class="border-b-[3px] border-[#1a2b4c]/20 w-full mx-auto"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ================= PAGE 8: PH01 Final ================= -->
+            <div id="page-ph01-final" class="page-content space-y-6">
+                <div class="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden max-w-5xl mx-auto my-8">
+                    <!-- Banner -->
+                    <div class="bg-[#1a2b4c] text-white p-10 text-center relative border-b-[6px] border-[#D4AF37]">
+                        <div class="absolute top-8 right-8 opacity-10"><i data-lucide="medal" class="w-24 h-24 text-[#D4AF37]"></i></div>
+                        <h2 class="text-sm font-black tracking-[0.25em] uppercase mb-3 text-[#D4AF37]">NĂM HỌC 2026-2027</h2>
+                        <h1 class="text-3xl md:text-4xl font-black mb-8 tracking-wide text-shadow">BÁO CÁO KẾT QUẢ TIẾNG ANH CAMBRIDGE</h1>
+                        
+                        <div class="text-white/90 text-lg flex flex-wrap items-center justify-center gap-4 font-bold bg-black/20 inline-flex px-8 py-3 rounded-full shadow-inner border border-white/10">
+                            Bài kiểm tra: Final 
+                            <select id="phf-num" onchange="syncPHFinal()" class="bg-transparent border-b-2 border-[#D4AF37] outline-none text-center font-black w-16 hover:border-white transition-colors text-white text-xl cursor-pointer">
+                                <option value="1" class="text-gray-800">1</option><option value="2" class="text-gray-800">2</option>
+                            </select> <span class="mx-3 opacity-30">|</span> 
+                            Cấp độ: <select id="phf-level" onchange="syncLevelFromPH(this.value)" class="bg-transparent border-b-2 border-[#D4AF37] outline-none text-center font-black w-48 hover:border-white transition-colors text-white text-xl cursor-pointer">
+                                <option value="Pre-A1" class="text-gray-800">Pre-A1</option><option value="Pre-A1 Starters" class="text-gray-800">Pre-A1 Starters</option><option value="A1 Movers" class="text-gray-800">A1 Movers</option><option value="A2 Flyers" class="text-gray-800">A2 Flyers</option><option value="A2 KET" class="text-gray-800">A2 KET</option><option value="B1 PET" class="text-gray-800">B1 PET</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="p-12 space-y-12">
+                        <!-- Thông tin -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-base border-b-2 border-gray-100 pb-10">
+                            <div class="md:col-span-2"><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Họ và tên học sinh</span><input type="text" class="w-full font-black text-2xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                            <div><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Lớp tiếng Anh</span><input type="text" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                            <div><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Ngày kiểm tra</span><input type="date" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]"></div>
+                            <div class="md:col-span-4"><span class="text-gray-400 block mb-2 uppercase font-black text-xs tracking-widest">Giáo viên AV</span><input type="text" class="w-full font-bold text-xl border-b-2 border-gray-300 focus:border-[#1a2b4c] outline-none pb-1 transition-colors text-[#1a2b4c]" placeholder="..."></div>
+                        </div>
+
+                        <!-- Tổng quan bảng điểm tự động -->
+                        <div>
+                            <div class="section-header !text-base !mb-6 w-full">TỔNG QUAN KẾT QUẢ (OVERALL PERFORMANCE)</div>
+                            <div class="overflow-x-auto rounded-xl border border-gray-300 shadow-sm">
+                                <table class="w-full text-base text-center border-collapse bg-white">
+                                    <thead class="bg-[#f8fafc] text-[#1a2b4c] border-b border-gray-300">
+                                        <tr>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Kỹ năng (Skills)</th>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Điểm (Scores)</th>
+                                            <th class="p-5 border-r border-gray-300 w-1/4 font-black uppercase text-sm tracking-wider">Khiên/Grade (Shields)</th>
+                                            <th class="p-5 w-1/4 font-black uppercase text-sm tracking-wider">Mã màu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 font-bold text-gray-800">
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-6 border-r border-gray-200 text-left flex items-center gap-4"><i data-lucide="headphones" class="w-6 h-6 text-[#1a2b4c]"></i> <span class="text-lg">Listening</span></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phf-lis-score" class="w-full bg-transparent border-none outline-none text-center text-2xl font-black text-[#1a2b4c]" placeholder="-"></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phf-lis-shield" class="w-16 mx-auto bg-gray-50 border border-gray-200 rounded outline-none text-center p-2 text-2xl font-black block" placeholder="-"></td>
+                                            <td class="p-6"><input type="text" id="phf-lis-rag" class="w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400" placeholder="-"></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-6 border-r border-gray-200 text-left flex items-center gap-4"><i data-lucide="book-open" class="w-6 h-6 text-[#1a2b4c]"></i> <span class="text-lg">Reading & Writing</span></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phf-rw-score" class="w-full bg-transparent border-none outline-none text-center text-2xl font-black text-[#1a2b4c]" placeholder="-"></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phf-rw-shield" class="w-16 mx-auto bg-gray-50 border border-gray-200 rounded outline-none text-center p-2 text-2xl font-black block" placeholder="-"></td>
+                                            <td class="p-6"><input type="text" id="phf-rw-rag" class="w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400" placeholder="-"></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-6 border-r border-gray-200 text-left flex items-center gap-4"><i data-lucide="mic" class="w-6 h-6 text-[#1a2b4c]"></i> <span class="text-lg">Speaking</span></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phf-spk-score" class="w-full bg-transparent border-none outline-none text-center text-2xl font-black text-[#1a2b4c]" placeholder="-"></td>
+                                            <td class="p-6 border-r border-gray-200"><input type="text" id="phf-spk-shield" class="w-16 mx-auto bg-gray-50 border border-gray-200 rounded outline-none text-center p-2 text-2xl font-black block" placeholder="-"></td>
+                                            <td class="p-6"><input type="text" id="phf-spk-rag" class="w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400" placeholder="-"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Phân tích chi tiết -->
+                        <div>
+                            <div class="section-header !text-base !mb-8 w-full">PHÂN TÍCH NĂNG LỰC CHI TIẾT (DETAILED SKILLS ANALYSIS)</div>
+                            
+                            <!-- Listening -->
+                            <div class="mb-10 border border-gray-300 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row bg-white">
+                                <div class="bg-slate-50 p-8 border-b md:border-b-0 md:border-r border-gray-200 md:w-1/3 shrink-0">
+                                    <div class="font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wider text-lg mb-6"><i data-lucide="headphones" class="w-7 h-7 text-[#D4AF37]"></i> LISTENING</div>
+                                    <p class="font-black text-gray-400 mb-4 uppercase text-xs tracking-widest border-b border-gray-200 pb-2">Khả năng đánh giá:</p>
+                                    <ul class="list-disc pl-5 space-y-3 text-gray-700 text-base font-bold">
+                                        <li>Nghe chi tiết và nhớ thông tin</li>
+                                        <li>Nghe số</li>
+                                        <li>Chính tả</li>
+                                        <li>Trình bày bài làm</li>
+                                    </ul>
+                                </div>
+                                <div class="p-8 md:w-2/3 flex flex-col justify-center gap-8">
+                                    <div><span class="text-emerald-600 font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="plus-circle" class="w-5 h-5"></i> Điểm mạnh:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-emerald-500 outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D2042D] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="minus-circle" class="w-5 h-5"></i> Điểm cần cải thiện:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D2042D] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D4AF37] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="lightbulb" class="w-5 h-5"></i> Đề xuất:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D4AF37] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                </div>
+                            </div>
+
+                            <!-- Reading & Writing -->
+                            <div class="mb-10 border border-gray-300 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row bg-white">
+                                <div class="bg-slate-50 p-8 border-b md:border-b-0 md:border-r border-gray-200 md:w-1/3 shrink-0">
+                                    <div class="font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wider text-lg mb-6"><i data-lucide="book-open" class="w-7 h-7 text-[#D4AF37]"></i> READING & WRITING</div>
+                                    <p class="font-black text-gray-400 mb-4 uppercase text-xs tracking-widest border-b border-gray-200 pb-2">Khả năng đánh giá:</p>
+                                    <ul class="list-disc pl-5 space-y-3 text-gray-700 text-base font-bold">
+                                        <li>Đọc hiểu nhanh và ghi nhớ</li>
+                                        <li>Hiểu cấu trúc</li>
+                                        <li>Văn phạm</li>
+                                        <li>Từ vựng</li>
+                                        <li>Chính tả</li>
+                                    </ul>
+                                </div>
+                                <div class="p-8 md:w-2/3 flex flex-col justify-center gap-8">
+                                    <div><span class="text-emerald-600 font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="plus-circle" class="w-5 h-5"></i> Điểm mạnh:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-emerald-500 outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D2042D] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="minus-circle" class="w-5 h-5"></i> Điểm cần cải thiện:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D2042D] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D4AF37] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="lightbulb" class="w-5 h-5"></i> Đề xuất:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D4AF37] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                </div>
+                            </div>
+
+                            <!-- Speaking -->
+                            <div class="mb-10 border border-gray-300 rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row bg-white">
+                                <div class="bg-slate-50 p-8 border-b md:border-b-0 md:border-r border-gray-200 md:w-1/3 shrink-0">
+                                    <div class="font-black text-[#1a2b4c] flex items-center gap-3 uppercase tracking-wider text-lg mb-6"><i data-lucide="mic" class="w-7 h-7 text-[#D4AF37]"></i> SPEAKING</div>
+                                    <p class="font-black text-gray-400 mb-4 uppercase text-xs tracking-widest border-b border-gray-200 pb-2">Khả năng đánh giá:</p>
+                                    <ul class="list-disc pl-5 space-y-3 text-gray-700 text-base font-bold">
+                                        <li>Từ vựng và văn phạm</li>
+                                        <li>Ngữ âm và Phát âm</li>
+                                        <li>Tương tác và phản xạ</li>
+                                    </ul>
+                                </div>
+                                <div class="p-8 md:w-2/3 flex flex-col justify-center gap-8">
+                                    <div><span class="text-emerald-600 font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="plus-circle" class="w-5 h-5"></i> Điểm mạnh:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-emerald-500 outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D2042D] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="minus-circle" class="w-5 h-5"></i> Điểm cần cải thiện:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D2042D] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                    <div><span class="text-[#D4AF37] font-black mb-3 flex items-center gap-2 uppercase tracking-wide text-sm"><i data-lucide="lightbulb" class="w-5 h-5"></i> Đề xuất:</span><textarea class="w-full border-b-2 border-dashed border-gray-300 focus:border-[#D4AF37] outline-none bg-transparent resize-none h-16 text-gray-800 font-medium leading-relaxed text-base transition-colors" placeholder="..."></textarea></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ký tên -->
+                        <div class="bg-blue-50/50 rounded-xl p-8 border border-blue-100 mt-10 relative shadow-inner">
+                            <h3 class="font-black text-[#1a2b4c] flex items-center gap-3 mb-5 uppercase tracking-wider text-base"><i data-lucide="pen-tool" class="w-6 h-6 text-[#D4AF37]"></i> Lời khuyên từ giáo viên (Teacher's Advice)</h3>
+                            <textarea class="form-input w-full bg-white/80 text-base text-gray-800 resize-none h-32 leading-relaxed focus:bg-white transition-colors" placeholder="Viết lời khuyên chi tiết tại đây..."></textarea>
+                            
+                            <div class="mt-16 pt-8 flex justify-between px-10 border-t-2 border-[#1a2b4c]/10">
+                                <div class="text-center w-64">
+                                    <p class="text-base font-black text-[#1a2b4c] mb-1 uppercase tracking-widest">Chữ ký phụ huynh</p>
+                                    <span class="font-bold italic text-sm text-gray-500 mb-24 block">(Ký và ghi rõ họ tên)</span>
+                                    <div class="border-b-[3px] border-[#1a2b4c]/20 w-full mx-auto"></div>
+                                </div>
+                                <div class="text-center w-64">
+                                    <p class="text-base font-black text-[#1a2b4c] mb-1 uppercase tracking-widest">Giáo viên xác nhận</p>
+                                    <span class="font-bold italic text-sm text-gray-500 mb-24 block">(Ký và ghi rõ họ tên)</span>
+                                    <div class="border-b-[3px] border-[#1a2b4c]/20 w-full mx-auto"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+    <script>
+        // --- 1. HỆ THỐNG ROLE & TAB (SỬA LẠI THEO YÊU CẦU: LOCK/UNLOCK BẰNG JS) ---
+        // Biến lưu trữ role hiện tại, mặc định giả sử chưa login hoặc login với quyền gv
+        let currentRole = 'gv'; // 'gv', 'cv', 'ph'
+
+        function initAppBasedOnRole(role) {
+            // role from React: 'gv', 'cv', 'ph', or 'admin'
+            // 'gv' -> can see 'gv' and 'ph'
+            // 'cv' or 'admin' -> can see 'gv', 'cv', 'ph'
+            
+            const btnGv = document.getElementById('btn-role-gv');
+            const btnCv = document.getElementById('btn-role-cv');
+            const btnPh = document.getElementById('btn-role-ph');
+
+            // Reset display and locked classes
+            const allRoleBtns = [btnGv, btnCv, btnPh];
+            allRoleBtns.forEach(btn => {
+                if(btn) {
+                    btn.classList.remove('cursor-not-allowed', 'pointer-events-none');
+                    btn.style.display = 'flex';
+                }
+            });
+
+            if (role === 'gv') {
+                if(btnCv) btnCv.style.display = 'none';
+                switchRole('role-gv');
+            } else if (role === 'cv' || role === 'admin') {
+                switchRole('role-cv');
+            } else {
+                if(btnCv) btnCv.style.display = 'none';
+                if(btnGv) btnGv.style.display = 'none';
+                switchRole('role-ph');
+            }
+        }
+
+        function switchRole(roleId) {
+            const roleKey = roleId.replace('role-', '');
+            currentRole = roleKey;
+
+            const allRoleBtns = document.querySelectorAll('.role-btn');
+            allRoleBtns.forEach(btn => {
+                btn.classList.remove('role-active');
+                btn.classList.add('role-inactive', 'opacity-50');
+            });
+
+            const activeBtn = document.getElementById(`btn-${roleId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('role-inactive', 'opacity-50');
+                activeBtn.classList.add('role-active');
+            }
+            
+            const allSubnavs = document.querySelectorAll('.subnav-group');
+            allSubnavs.forEach(nav => nav.style.display = 'none');
+            
+            const subnav = document.getElementById(`subnav-${roleId}`);
+            if (subnav) subnav.style.display = 'flex';
+
+            const allPages = document.querySelectorAll('.page-content');
+            allPages.forEach(page => page.classList.remove('active'));
+
+            if (roleKey === 'gv') switchTab('page-gv01');
+            if (roleKey === 'cv') switchTab('page-cv01');
+            if (roleKey === 'ph') switchTab('page-ph01-tuan');
+        }
+
+        function switchTab(pageId) {
+            // Reset tất cả tab-btn trong role hiện tại
+            const currentSubnav = document.getElementById(`subnav-role-${currentRole}`);
+            if (currentSubnav) {
+                const tabs = currentSubnav.querySelectorAll('.tab-btn');
+                tabs.forEach(tab => {
+                    tab.classList.remove('tab-active');
+                    tab.classList.add('tab-inactive');
+                });
+            }
+
+            // Set active cho tab-btn được click
+            const activeTab = document.getElementById(`tab-${pageId.replace('page-', '')}`);
+            if(activeTab) {
+                activeTab.classList.remove('tab-inactive');
+                activeTab.classList.add('tab-active');
+            }
+
+            // Ẩn tất cả pages, show page được chọn
+            document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+
+            if(pageId === 'page-cv02') {
+                setTimeout(() => { renderCV02Chart(); }, 100);
+            }
+        }
+
+        // ... [Giữ nguyên toàn bộ logic tạo lịch, tính điểm, biểu đồ như cũ ở dưới] ...
+        
+        // --- 2. GV01 - THEO DÕI CÁ NHÂN ---
+        function getDaysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
+        function getDayName(year, month, day) { return new Date(year, month - 1, day).toLocaleDateString('vi-VN', { weekday: 'short' }); }
+        
+        function generateGV01Calendar() {
+            const picker = document.getElementById('gv01-month-picker');
+            if(!picker || !picker.value) return;
+            const [year, month] = picker.value.split('-');
+            const numDays = getDaysInMonth(year, month);
+            const tbody = document.getElementById('gv01-tbody');
+            tbody.innerHTML = '';
+
+            for (let i = 1; i <= numDays; i++) {
+                const dayName = getDayName(year, month, i);
+                if (dayName === 'CN') continue;
+                const weekNum = Math.ceil(i / 7);
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors';
+                
+                let html = `
+                    <td class="px-3 py-3 border border-gray-200 font-bold text-gray-500">${weekNum}</td>
+                    <td class="px-3 py-3 border border-gray-200 font-bold">${i < 10 ? '0'+i : i}/${month}</td>
+                    <td class="px-3 py-3 border border-gray-200 font-bold ${dayName==='T7'?'text-rose-500':''}">${dayName}</td>
+                `;
+
+                for (let j = 0; j < 7; j++) {
+                    html += `
+                        <td class="px-2 py-3 border border-gray-200">
+                            <select class="w-full bg-transparent outline-none text-center font-black rounded" onchange="updateGV01CellColor(this)">
+                                <option value="" class="text-gray-500">-</option>
+                                <option value="3" class="text-emerald-600 bg-emerald-50">3</option>
+                                <option value="2" class="text-[#D4AF37] bg-yellow-50">2</option>
+                                <option value="1" class="text-[#D2042D] bg-red-50">1</option>
+                                <option value="0" class="text-gray-400">0</option>
+                            </select>
+                        </td>
+                    `;
+                }
+                html += `<td class="px-2 py-3 border border-gray-200"><input type="text" class="w-full bg-transparent border-b border-transparent focus:border-[#1a2b4c] outline-none text-sm px-2 text-left"></td>`;
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function updateGV01CellColor(select) {
+            const val = select.value;
+            select.className = "w-full bg-transparent outline-none text-center font-black rounded";
+            if (val === "3") select.classList.add("text-emerald-600");
+            else if (val === "2") select.classList.add("text-[#D4AF37]");
+            else if (val === "1") select.classList.add("text-[#D2042D]");
+            else if (val === "0") select.classList.add("text-gray-400");
+        }
+
+        // --- 3. CV02 - TIẾN ĐỘ & DỰ BÁO ---
+        const CEFR_DATA = {
+            'Pre-A1': {
+                papers: [
+                    { name: 'Listening', tests: ['Test 1','Test 2','Test 3'], parts: [5,5,5,5], max: 20, weight: 1/3 },
+                    { name: 'Reading & Writing', tests: ['Test 1','Test 2','Test 3'], parts: [5,5,5,5,5], max: 25, weight: 1/3 },
+                    { name: 'Speaking', tests: ['Test 1','Test 2','Test 3'], parts: [15], max: 15, weight: 1/3 }
+                ]
+            },
+            'Pre-A1 Starters': {
+                papers: [
+                    { name: 'Listening', tests: ['Test 1','Test 2','Test 3'], parts: [5,5,5,5], max: 20, weight: 1/3 },
+                    { name: 'Reading & Writing', tests: ['Test 1','Test 2','Test 3'], parts: [5,5,5,5,5], max: 25, weight: 1/3 },
+                    { name: 'Speaking', tests: ['Test 1','Test 2','Test 3'], parts: [15], max: 15, weight: 1/3 }
+                ]
+            },
+            'A1 Movers': {
+                papers: [
+                    { name: 'Listening', tests: ['Test 1','Test 2','Test 3'], parts: [5,5,5,5,5], max: 25, weight: 1/3 },
+                    { name: 'Reading & Writing', tests: ['Test 1','Test 2','Test 3'], parts: [5,6,6,5,7,6], max: 35, weight: 1/3 },
+                    { name: 'Speaking', tests: ['Test 1','Test 2','Test 3'], parts: [15], max: 15, weight: 1/3 }
+                ]
+            },
+            'A2 Flyers': {
+                papers: [
+                    { name: 'Listening', tests: ['Test 1','Test 2','Test 3'], parts: [5,5,5,5,5], max: 25, weight: 1/3 },
+                    { name: 'Reading & Writing', tests: ['Test 1','Test 2','Test 3'], parts: [10,5,6,5,7,5,5], max: 43, weight: 1/3 },
+                    { name: 'Speaking', tests: ['Test 1','Test 2','Test 3'], parts: [15], max: 15, weight: 1/3 }
+                ]
+            },
+            'A2 KET': {
+                papers: [
+                    { name: 'Reading & Writing', tests: ['Test 1','Test 2','Test 3'], parts: [6,7,5,6,6,15,15], max: 60, weight: 0.5 },
+                    { name: 'Listening', tests: ['Test 1','Test 2','Test 3'], parts: [5,5,5,5,5], max: 25, weight: 0.25 },
+                    { name: 'Speaking', tests: ['Test 1','Test 2','Test 3'], parts: [30], max: 30, weight: 0.25 }
+                ]
+            },
+            'B1 PET': {
+                papers: [
+                    { name: 'Reading', tests: ['Test 1','Test 2','Test 3'], parts: [5,5,5,5,6,6], max: 32, weight: 0.25 },
+                    { name: 'Writing', tests: ['Test 1','Test 2','Test 3'], parts: [20,20], max: 40, weight: 0.25 },
+                    { name: 'Listening', tests: ['Test 1','Test 2','Test 3'], parts: [7,6,6,6], max: 25, weight: 0.25 },
+                    { name: 'Speaking', tests: ['Test 1','Test 2','Test 3'], parts: [30], max: 30, weight: 0.25 }
+                ]
+            }
+        };
+
+        function getGrade(score, max, level, paperName) {
+            const pct = score / max;
+            if (level === 'Pre-A1' || level === 'Pre-A1 Starters' || level === 'A1 Movers' || level === 'A2 Flyers') {
+                let shields = 0;
+                if (pct >= 0.8) shields = 5;
+                else if (pct >= 0.6) shields = 4;
+                else if (pct >= 0.4) shields = 3;
+                else if (pct >= 0.2) shields = 2;
+                else if (pct > 0) shields = 1;
+                return { text: shields, type: 'shield' };
+            } else {
+                let grade = 'Fail';
+                if (pct >= 0.9) grade = 'A';
+                else if (pct >= 0.8) grade = 'B';
+                else if (pct >= 0.7) grade = 'C';
+                return { text: grade, type: 'grade' };
+            }
+        }
+
+        function getRAG(score, max) {
+            const pct = score / max;
+            if (pct >= 0.8) return { text: 'Green', class: 'bg-emerald-100 text-emerald-700' };
+            if (pct >= 0.5) return { text: 'Amber', class: 'bg-yellow-100 text-yellow-700' };
+            return { text: 'Red', class: 'bg-red-100 text-red-700' };
+        }
+
+        function renderCV02Table() {
+            const level = document.getElementById('cv02-level').value;
+            const data = CEFR_DATA[level];
+            const tbody = document.getElementById('cv02-tbody');
+            tbody.innerHTML = '';
+            
+            const isYle = ['Pre-A1','Pre-A1 Starters','A1 Movers','A2 Flyers'].includes(level);
+            document.getElementById('cv02-shield-hdr').innerText = isYle ? 'Shields' : 'Grade';
+
+            data.papers.forEach((paper, pIdx) => {
+                paper.tests.forEach((test, tIdx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition-colors border-b border-gray-200";
+                    let html = '';
+                    
+                    if (tIdx === 0) {
+                        html += `<td class="p-3 border-r border-gray-200 font-black text-[#1a2b4c] align-middle" rowspan="${paper.tests.length}">${paper.name}</td>`;
+                    }
+                    html += `<td class="p-3 border-r border-gray-200 font-bold">${test}</td>`;
+                    
+                    for (let i = 0; i < 7; i++) {
+                        if (i < paper.parts.length) {
+                            const maxPart = paper.parts[i];
+                            html += `<td class="p-2 border-r border-gray-200"><input type="number" min="0" max="${maxPart}" class="w-10 text-center border-b border-gray-300 outline-none font-bold text-[#1a2b4c] focus:border-[#D2042D]" onchange="updateCV02Row(this, ${maxPart})" data-max="${maxPart}"></td>`;
+                        } else {
+                            html += `<td class="p-2 border-r border-gray-200 bg-gray-100"></td>`;
+                        }
+                    }
+                    
+                    html += `
+                        <td class="p-3 border-r border-gray-200 font-black text-[#1a2b4c] total-cell" data-max="${paper.max}">0 / ${paper.max}</td>
+                        <td class="p-3 border-r border-gray-200 font-black text-[#D4AF37] shield-cell text-lg">-</td>
+                        <td class="p-3 font-black text-xs uppercase tracking-widest rag-cell">-</td>
+                    `;
+                    tr.innerHTML = html;
+                    tbody.appendChild(tr);
+                });
+            });
+            updateCV02Chart();
+        }
+
+        function updateCV02Row(input, maxPart) {
+            let val = parseInt(input.value) || 0;
+            if (val > maxPart) { val = maxPart; input.value = maxPart; }
+            if (val < 0) { val = 0; input.value = 0; }
+
+            const tr = input.closest('tr');
+            const inputs = tr.querySelectorAll('input[type="number"]');
+            let total = 0;
+            inputs.forEach(inp => total += (parseInt(inp.value) || 0));
+
+            const totalCell = tr.querySelector('.total-cell');
+            const maxPaper = parseInt(totalCell.getAttribute('data-max'));
+            totalCell.innerText = `${total} / ${maxPaper}`;
+
+            const level = document.getElementById('cv02-level').value;
+            const isYle = ['Pre-A1','Pre-A1 Starters','A1 Movers','A2 Flyers'].includes(level);
+            
+            const res = getGrade(total, maxPaper, level);
+            const shieldCell = tr.querySelector('.shield-cell');
+            
+            if(res.type === 'shield') {
+                shieldCell.innerHTML = res.text > 0 ? Array(res.text).fill('<i data-lucide="shield" class="w-4 h-4 inline fill-current text-[#D4AF37]"></i>').join('') : '0';
+                if(res.text > 0) lucide.createIcons();
+            } else {
+                shieldCell.innerText = res.text;
+                shieldCell.className = `p-3 border-r border-gray-200 font-black text-lg ${res.text==='A'?'text-emerald-600':res.text==='B'?'text-blue-600':res.text==='C'?'text-[#D4AF37]':'text-[#D2042D]'}`;
+            }
+
+            const rag = getRAG(total, maxPaper);
+            const ragCell = tr.querySelector('.rag-cell');
+            ragCell.innerText = rag.text;
+            ragCell.className = `p-3 font-black text-xs uppercase tracking-widest rag-cell rounded-md ${rag.class}`;
+
+            updateCV02Chart();
+        }
+
+        let cv02ChartInstance = null;
+        function renderCV02Chart() {
+            const ctx = document.getElementById('cv02Chart');
+            if(!ctx) return;
+            
+            if (cv02ChartInstance) {
+                cv02ChartInstance.destroy();
+            }
+
+            cv02ChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Test 1', 'Test 2', 'Test 3'],
+                    datasets: [
+                        { label: 'Overall Progress (%)', data: [0, 0, 0], borderColor: '#D2042D', backgroundColor: 'rgba(210, 4, 45, 0.1)', borderWidth: 3, tension: 0.4, fill: true, pointBackgroundColor: '#D2042D', pointRadius: 5, pointHoverRadius: 7 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, ticks: { font: { weight: 'bold' } } },
+                        x: { ticks: { font: { weight: 'bold' } } }
+                    },
+                    plugins: {
+                        legend: { labels: { font: { weight: 'bold' } } },
+                        tooltip: { titleFont: { weight: 'bold' }, bodyFont: { weight: 'bold' } }
+                    }
+                }
+            });
+        }
+
+        function updateCV02Chart() {
+            if (!cv02ChartInstance) return;
+            const level = document.getElementById('cv02-level').value;
+            const data = CEFR_DATA[level];
+            const tbody = document.getElementById('cv02-tbody');
+            const trs = tbody.querySelectorAll('tr');
+
+            let testTotals = [0, 0, 0];
+            
+            data.papers.forEach((paper, pIdx) => {
+                paper.tests.forEach((test, tIdx) => {
+                    // Cần tính row index
+                    let rIdx = 0;
+                    for(let i=0; i<pIdx; i++) rIdx += data.papers[i].tests.length;
+                    rIdx += tIdx;
+                    
+                    if (trs[rIdx]) {
+                        const totalCell = trs[rIdx].querySelector('.total-cell');
+                        const score = parseInt(totalCell.innerText.split('/')[0].trim()) || 0;
+                        const pct = (score / paper.max) * 100;
+                        testTotals[tIdx] += pct * paper.weight;
+                    }
+                });
+            });
+
+            cv02ChartInstance.data.datasets[0].data = testTotals.map(v => Math.round(v));
+            cv02ChartInstance.update();
+        }
+
+        // --- 4. ĐỒNG BỘ CẤP ĐỘ PHỤ HUYNH ---
+        function syncLevelFromPH(val) {
+            document.getElementById('phl-level').value = val;
+            document.getElementById('phm-level').value = val;
+            document.getElementById('phf-level').value = val;
+        }
+
+        function syncPHLesson() {
+            // Tự động clear input khi chuyển bài
+            ['lis', 'rw'].forEach(skill => {
+                document.getElementById(`phl-${skill}-score`).value = '';
+                document.getElementById(`phl-${skill}-shield`).value = '';
+                document.getElementById(`phl-${skill}-rag`).value = '';
+                document.getElementById(`phl-${skill}-rag`).className = "w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400";
+            });
+        }
+        
+        function syncPHMidterm() {
+            ['lis', 'rw', 'spk'].forEach(skill => {
+                document.getElementById(`phm-${skill}-score`).value = '';
+                document.getElementById(`phm-${skill}-shield`).value = '';
+                document.getElementById(`phm-${skill}-rag`).value = '';
+                document.getElementById(`phm-${skill}-rag`).className = "w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400";
+            });
+        }
+
+        function syncPHFinal() {
+            ['lis', 'rw', 'spk'].forEach(skill => {
+                document.getElementById(`phf-${skill}-score`).value = '';
+                document.getElementById(`phf-${skill}-shield`).value = '';
+                document.getElementById(`phf-${skill}-rag`).value = '';
+                document.getElementById(`phf-${skill}-rag`).className = "w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400";
+            });
+        }
+
+        // Lắng nghe sự kiện để cập nhật tự động bên tab PH
+        document.addEventListener('input', function(e) {
+            if(e.target.id && e.target.id.includes('-score')) {
+                const idParts = e.target.id.split('-');
+                const prefix = idParts[0]; // phl, phm, phf
+                const skill = idParts[1];  // lis, rw, spk
+                
+                const val = parseInt(e.target.value);
+                const shieldInput = document.getElementById(`${prefix}-${skill}-shield`);
+                const ragInput = document.getElementById(`${prefix}-${skill}-rag`);
+                
+                if (isNaN(val)) {
+                    shieldInput.value = '';
+                    ragInput.value = '';
+                    ragInput.className = "w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 bg-gray-100 text-gray-400";
+                    return;
+                }
+                
+                // Giả lập max score: Lis=20/25, RW=25/35, Spk=15/30
+                // (Trong thực tế cần lấy max từ CEFR_DATA tùy cấp độ)
+                let max = 25; 
+                if (skill === 'spk') max = 15;
+
+                const level = document.getElementById(`${prefix}-level`)?.value || 'Pre-A1';
+                
+                const res = getGrade(val, max, level);
+                shieldInput.value = res.text;
+                
+                const rag = getRAG(val, max);
+                ragInput.value = rag.text;
+                ragInput.className = `w-full rounded shadow-inner outline-none text-center text-xs font-black uppercase tracking-widest py-3 ${rag.class}`;
+            }
+        });
+
+
+        // Khởi tạo
+        window.onload = function() {
+            lucide.createIcons();
+            generateGV01Calendar();
+            renderCV02Table();
+            renderCV02Chart();
+            
+            
+            
+            // Mặc định khóa (hoặc đợi message từ React)
+            // Tạm thời nếu mở file trực tiếp thì init thành GV
+            // initAppBasedOnRole('gv');
+        };
+
+    // Xử lý thông điệp từ React Parent (để lock/unlock tool)
+            window.addEventListener('message', (event) => {
+                // Bảo mật: kiểm tra origin nếu cần (hiện tại iframe cùng origin)
+                const data = event.data;
+                if (data && data.type === 'SET_ROLE') {
+                    const roleMapping = {
+                        'teacher': 'gv',
+                        'specialist': 'cv',
+                        'parent': 'ph',
+                        'admin': 'admin',
+                        'gv': 'gv',
+                        'cv': 'cv',
+                        'ph': 'ph'
+                    };
+                    const role = roleMapping[data.role];
+                    if (role) {
+                        initAppBasedOnRole(role);
+                    }
+                }
+            });
+    </script>
+</body>
+</html>
+
+

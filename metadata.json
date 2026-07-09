@@ -1,0 +1,8 @@
+{
+  "name": "VA Secondary Placement Test",
+  "description": "Nền tảng kiểm tra trình độ tiếng Anh đầu vào với bài kiểm tra đa định dạng, phần chấm điểm phỏng vấn cho giáo viên và tạo báo cáo tự động.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
